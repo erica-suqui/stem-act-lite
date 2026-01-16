@@ -17,6 +17,14 @@ app.get('/', (req, res) => {
 	});
 });
 
+app.get('/about', (req, res) => {
+	res.render('about', {
+		title: 'About',
+		currentPage: 'about',
+		message: 'STEM-ACT about page'
+	});
+});
+
 app.listen(PORT, () => {
 	console.log(`Running STEM-ACT site at http://localhost:${PORT}`);
 });
