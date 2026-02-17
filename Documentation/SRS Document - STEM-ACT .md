@@ -469,8 +469,8 @@ The developer who created the current WordPress website serves as a centralized 
 | Phase | Focus | Deliverables |
 | :---- | :---- | :---- |
 | Phase 1: Foundation | Setup & Authentication | WordPress plugin scaffold, database schema, user registration/login for partners and admins |
-| Phase 2: Submission System | Event Submission | Registration form with optional event submission, "Add another event" functionality, form validation |
-| Phase 3: Admin Dashboard | Approval Workflow | Admin interface to view pending submissions, approve/deny functionality, status tracking |
+| Phase 2: Admin Dashboard | Approval Workflow | Admin interface to view pending submissions, approve/deny functionality, status tracking |
+| Phase 3: Submission System | Event Submission | Registration form with optional event submission, "Add another event" functionality, form validation |
 | Phase 4: Public Catalog | Event Display | Embedded event catalog, filtering system, interactive map integration |
 | Phase 5: Polish & Testing | QA & Deployment | Bug fixes, cross-browser testing, performance optimization, deployment to subdomain |
 
