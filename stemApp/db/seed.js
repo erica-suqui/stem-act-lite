@@ -33,8 +33,8 @@ async function seed() {
 		// Insert admin user
 		await pool.query(`
 			INSERT INTO users (email, password_hash, role, org_id) VALUES
-			('admin@stemact.org', '$2b$10$placeholder', 'super_admin', NULL),
-			('cheryl@stemact.org', '$2b$10$placeholder', 'admin', NULL),
+			('superAdmin@stemact.org', '$2b$10$placeholder', 'super_admin', NULL),
+			('admin@stemact.org', '$2b$10$placeholder', 'admin', NULL),
 			('stem@yale.edu', '$2b$10$placeholder', 'partner', 1),
 			('events@ctsci.org', '$2b$10$placeholder', 'partner', 2),
 			('mfrank@wilbur.edu', '$2b$10$placeholder', 'partner', 3)
