@@ -23,7 +23,7 @@ STEM-ACT relies mainly on manual processes to manage STEM event submissions. Eve
 The proposed solution is a custom WordPress plugin that replaces the current manual workflow with a structured, role-based submission and approval system.
 
 * **Registration with Optional Event Submission:** New partner organizations register through an account creation form. During registration, they are prompted: "Would you like to add an event now?" Selecting "Yes" expands the form to include event details fields. Partners can add multiple events by selecting an "Add another event" checkbox. Selecting "No" completes registration without an event submission.  
-* **Approval Workflow:** All event submissions—whether submitted during registration or later—move through the same approval states (pending, approved, denied) with admin-controlled moderation.  
+* **Approval Workflow:** All event submissions—whether submitted during registration or later—move through the same approval states (pending, approved, denied) with admin-controlled moderation. There will be two tabs 1 for trusted partners and another for public users
 * **Automated Publishing:** Approved events are automatically published to the public-facing event catalog.  
 * **Tracking & Notifications:** Partners can track submission status and receive notifications on updates.
 
@@ -468,7 +468,7 @@ The developer who created the current WordPress website serves as a centralized 
 
 | Phase | Focus | Deliverables |
 | :---- | :---- | :---- |
-| Phase 1: Foundation | Setup & Authentication | WordPress plugin scaffold, database schema, user registration/login for partners and admins |
+| Phase 1: Foundation | Setup & Authentication | WordPress plugin scaffold, database schema, user registration/login for users, partners, and admins |
 | Phase 2: Admin Dashboard | Approval Workflow | Admin interface to view pending submissions, approve/deny functionality, status tracking |
 | Phase 3: Submission System | Event Submission | Registration form with optional event submission, "Add another event" functionality, form validation |
 | Phase 4: Public Catalog | Event Display | Embedded event catalog, filtering system, interactive map integration |

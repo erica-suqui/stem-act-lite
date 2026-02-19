@@ -1,4 +1,5 @@
 import './globals.css';
+import NavLinks from './components/NavLinks';
 
 export const metadata = {
 	title: 'STEM-ACT Admin Dashboard',
@@ -9,17 +10,13 @@ export default function RootLayout({ children }) {
 	return (
 		<html lang="en">
 			<body>
-				<nav className="navbar">
+				<nav className="navbar" aria-label="Main navigation">
 					<div className="nav-brand">
-						<h1>STEM-ACT</h1>
+						{/* Not an h1 — page h1 lives inside each page's <main> (WCAG 1.3.1) */}
+						<span className="nav-brand-name">STEM-ACT</span>
 						<span className="nav-subtitle">Admin Dashboard</span>
 					</div>
-					<div className="nav-links">
-						<a href="/">Dashboard</a>
-						<a href="http://localhost:3001" target="_blank" rel="noopener">
-							Public Site
-						</a>
-					</div>
+					<NavLinks />
 				</nav>
 				{children}
 			</body>

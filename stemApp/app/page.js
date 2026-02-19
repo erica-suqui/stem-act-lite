@@ -35,9 +35,12 @@ export default async function Dashboard() {
 
 	return (
 		<main className="dashboard">
-			<h2>Event Submissions</h2>
+			<h1 className="page-title">Event Submissions</h1>
 			<StatsCards stats={stats} />
-			<EventsTable events={JSON.parse(JSON.stringify(events))} />
+			<EventsTable
+				events={JSON.parse(JSON.stringify(events))}
+				organizations={JSON.parse(JSON.stringify(organizations))}
+			/>
 
 			<h2>Partner Organizations</h2>
 			<OrganizationsTable organizations={JSON.parse(JSON.stringify(organizations))} />
