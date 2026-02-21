@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
 					<div className="nav-brand">
 						{/* Not an h1 — page h1 lives inside each page's <main> (WCAG 1.3.1) */}
 						<span className="nav-brand-name">STEM-ACT</span>
-						<span className="nav-subtitle">Admin Dashboard</span>
+					
 					</div>
 					<NavLinks />
 				</nav>

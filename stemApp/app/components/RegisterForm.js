@@ -16,6 +16,8 @@ export default function RegisterForm(){
 
     //Form Errors to raise Flags using Zod Library 
     const [errors, setErrors] = useState({})
+    const [showModal, setShowModal] = useState(false);
+
 
     const registerSchema = z.object({
         orgName : z.string().min(1, "Organization Name Required"),
@@ -65,8 +67,10 @@ export default function RegisterForm(){
            const data = await response.json();  
 
             if (data.success) {
-                alert("Registration successful!");
-                navigate.push("/login")
+                setShowModal(true);
+                setTimeout(() => {
+                    navigate.push("/");
+                }, 2000);
             } else {
                 alert("Error: " + data.error);
             }     
@@ -132,7 +136,13 @@ export default function RegisterForm(){
 
                 
             </form>
-            
+            {showModal && (
+            <div className="modal-overlay-register-page">
+                <div className="modal-box-register-page">
+                <p>Registration successful! Redirecting to login...</p>
+                </div>
+            </div>
+            )}
         </div>
     );
 }

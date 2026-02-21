@@ -446,6 +446,24 @@ body {
 	z-index: 1000;
 }
 
+.modal-overlay-register-page{
+	position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.743);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box-register-page{
+	background: #fff;
+    border-radius: 12px;
+    padding: 32px 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    font-size: 1.1rem;
+}
 .modal-content {
 	background: #fff;
 	border-radius: 8px;
@@ -718,11 +736,16 @@ body {
 .register-container h6{
 	font-weight: 500;
 }
-.password-requirements{
+.password-requirements{	
 	padding-left: 1rem;
 	font-size: small;
 	color:#555;
 }
+
+.error-message{
+	color:red;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
 	.stats-grid {
