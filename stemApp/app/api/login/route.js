@@ -10,8 +10,7 @@ export async function POST(request){
         const { email, password } = body;
 
         const result = await pool.query(`
-        SELECT email, password_hash, role, org_id  FROM users WHERE email = $1',
-        `
+        SELECT email, password_hash, role, org_id, user_id FROM users WHERE email = $1`,
         [email]
         )
 
@@ -24,20 +23,20 @@ export async function POST(request){
             }
         
             const user = result.rows[0]
-            const valid = await bcrypt.compare(password,user.passsord_hash);
+            const valid = await bcrypt.compare(password,user.password_hash);
 
             if(!valid){
                 return NextResponse.json({
-                    sucess: false,
+                    success: false,
                     error: "Invalid email or password",
                     }, {status: 401});
             }
 
             return NextResponse.json({
-                sucess: true,
+                success: true,
                 userID : user.user_id,
                 role: user.role,
-                orgId: user.orgId
+                orgId: user.org_id
             }
 
             );
@@ -47,9 +46,9 @@ export async function POST(request){
         }
     catch(error){
         return NextResponse.json({
-            sucess: false,
+            success: false,
             error: error.message
-        }, { ststus: 500 });
+        }, { status: 500 });
     }
 
 }

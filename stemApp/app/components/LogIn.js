@@ -1,6 +1,6 @@
 'use client';
 
-import { navigate } from 'next/dist/client/components/segment-cache/navigation';
+import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import * as z from 'zod';
 
@@ -13,7 +13,8 @@ export default function LogIn(){
     });
 
     const [errors, setErrors] = useState({})
-
+    const router = useRouter();
+    const [loginError, setLoginError] = useState('');
 
     const LogInSchema = z.object({
         email: z.string().email().min(1,"Missing Email"),
@@ -54,27 +55,30 @@ export default function LogIn(){
             const data = await response.json();
 
             if (data.success) {
-                if (!data.role) {
-                    alert("Error: No role returned");
-                    return;
-                }
+                localStorage.setItem('userID', data.userID);
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('orgId', data.orgId);
+                
                 if (data.role === 'partner'){
-                    navigate.push('/trustedPartnerDashboard');
+                    router.push('/trustedPartnerDashboard');
                 }
                 else if(data.role === 'admin'){
-                    navigate.push('/');
+                    router.push('/adminDashboard');
+                }
+                else if (data.role == 'super_admin'){
+                    router.push('/superAdminDashboard');
                 }
                 else{
-                    navigate.push('/super_adminDashboard');
+                    setLoginError(data.error);
                 }
             }
             else{
-                alert("Error: " + data.error);
+                setLoginError(data.error);
             }
         }
         catch(error){
             console.error("Error:", error);
-            alert("Something went wrong");
+            setLoginError("Something went wrong");
         }
 
        
@@ -104,7 +108,7 @@ export default function LogIn(){
                 onChange={handleChange}
                 />
                 {errors.password && <span>{errors.password._errors[0]}</span>}
-
+                {loginError && <p className="error-message">{loginError}</p>}
 
                 <button type = "submit">Log In</button>
 

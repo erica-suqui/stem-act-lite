@@ -19,7 +19,7 @@ export default function RegisterPage() {
 
 
             <div className = "redirect-login">
-                    <p> Already have an account?  <a href="/login" rel="noreferrer">Sign in</a></p>
+                    <p> Already have an account?  <a href="/" rel="noreferrer">Sign in</a></p>
             </div>
         </main>
     );

@@ -3,19 +3,28 @@
 import { usePathname } from 'next/navigation';
 
 const links = [
-	{ href: '/',         label: 'Dashboard' },
+	{ href: '/superAdminDashboard',         label: 'Dashboard' },
 	{ href: '/partners', label: 'Partners' },
 	{ href: '/users',    label: 'Users' },
 	{ href: 'https://stemact.org', label: 'Public Site', external: true },
+	{ href: '/',     label: 'Logout'},
 ];
 
 export default function NavLinks() {
 	const pathname = usePathname();
+	const handleLogout = () => {
+		localStorage.clear();
+		window.location.href = '/';
+	};
+
+	if (pathname == '/' || pathname === '/register') 
+		return null;
 
 	return (
 		<div className="nav-links">
 			{links.map(link => {
 				const isActive = !link.external && pathname === link.href;
+				
 				return (
 					<a
 						key={link.href}
@@ -28,7 +37,9 @@ export default function NavLinks() {
 						)}
 					>
 						{link.label}
+
 					</a>
+					
 				);
 			})}
 		</div>
