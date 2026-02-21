@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 require('dotenv').config({ path: '.env.local' });
+const bcrypt = require('bcrypt');
 
 const pool = new Pool({
 	host: process.env.DB_HOST,
@@ -7,6 +8,13 @@ const pool = new Pool({
 	database: process.env.DB_NAME,
 	user: process.env.DB_USER,
 	password: process.env.DB_PASSWORD,
+});
+
+console.log("DB Config:", {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER
 });
 
 async function seed() {
@@ -29,16 +37,25 @@ async function seed() {
 			('Wilbur Elementary School', 'mfrank@wilbur.edu', '203-555-0303', 'active'),
 			('New Haven Public Library', 'programs@nhpl.org', '203-555-0404', 'pending')
 		`);
+		const adminpassword = await bcrypt.hash('Admin123',10);
 
+		await pool.query(
+			'INSERT INTO users (email, password_hash, role, org_id) VALUES ($1, $2, $3, $4)',
+			['cheryl@stemact.org', adminpassword, 'admin', null]
+		);
 		// Insert admin user
 		await pool.query(`
 			INSERT INTO users (email, password_hash, role, org_id) VALUES
-			('superAdmin@stemact.org', '$2b$10$placeholder', 'super_admin', NULL),
-			('admin@stemact.org', '$2b$10$placeholder', 'admin', NULL),
+			('admin@stemact.org', '$2b$10$placeholder', 'super_admin', NULL),
+
 			('stem@yale.edu', '$2b$10$placeholder', 'partner', 1),
 			('events@ctsci.org', '$2b$10$placeholder', 'partner', 2),
 			('mfrank@wilbur.edu', '$2b$10$placeholder', 'partner', 3)
 		`);
+
+		
+		
+
 
 		// Insert sample events
 		await pool.query(`

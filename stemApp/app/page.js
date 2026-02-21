@@ -5,6 +5,10 @@ import OrganizationsTable from './components/OrganizationsTable';
 
 export const dynamic = 'force-dynamic';
 
+
+
+
+
 async function getEvents() {
 	const result = await pool.query(`
 		SELECT e.*, o.org_name

@@ -567,6 +567,162 @@ body {
 	pointer-events: none;
 }
 
+/*LogInForm*/
+.login-container{
+	max-width: 500px;
+	margin: 2rem auto;
+	padding: 2rem;
+	background: #fff;
+	border-radius: 15px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2{
+	text-align: center;
+	font-size: 2rem;
+	padding: 1rem;
+}
+
+
+
+.form-fields-login {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding-bottom: 1rem;
+}
+
+.login-form input {
+	padding: 1rem 1.5em;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 0.9rem;
+	font-family: inherit;
+	width: 100%;
+	
+}
+
+.login-form input:hover{
+	background: #e5e5eb;
+	opacity: 0.5;
+}
+
+.login-form button{
+	padding: 0.75rem;
+	background: #1a1a2e;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-weight: 500;
+	font-size: 0.9rem;
+	cursor: pointer;
+	margin-top: 0.5rem;
+	align-self: center;
+	width: 100%;
+}
+
+
+
+/*RegisterForm*/
+.register-container {
+	max-width: 500px;
+	margin: 2rem auto;
+	padding: 2rem;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.register-container h2 {
+	color: #1a1a2e;
+	margin-bottom: 0.5rem;
+	text-align: center;
+	font-size: 2rem;
+}
+
+.register-container h5{
+	color: #1a1a2e;
+	font-size: 0.9rem;
+	font-weight: normal;
+	padding-bottom: 1rem;
+}
+
+.register-container p {
+	color: #666;
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	font-size: 0.8rem;
+}
+
+.register-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding-bottom: 1rem;
+}
+
+
+
+.register-form input {
+	padding: 1rem 1.5em;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 0.9rem;
+	font-family: inherit;
+	width: 100%;
+	
+}
+.register-form input:hover{
+	background: #e5e5eb;
+	opacity: 0.5;
+}
+
+.register-form input:focus {
+	outline: none;
+	border-color: #1a1a2e;
+}
+
+.form-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+.register-form p {
+    font-weight: 300;
+    font-size: 0.9rem;
+    color: #1a1a2e;
+    margin: 0;  
+}
+.register-form button {
+	padding: 0.75rem;
+	background: #1a1a2e;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-weight: 500;
+	font-size: 0.9rem;
+	cursor: pointer;
+	margin-top: 0.5rem;
+	align-self: center;
+	width: 100%;
+	
+}
+
+.register-form redirect-login{
+	font-size: small;
+}
+
+.register-form button:hover {
+	background: #8d8db2;
+}
+.register-container h6{
+	font-weight: 500;
+}
+.password-requirements{
+	padding-left: 1rem;
+	font-size: small;
+	color:#555;
+}
 /* Responsive */
 @media (max-width: 768px) {
 	.stats-grid {
