@@ -1,34 +1,12 @@
-import pool from '@/lib/db';
+import { mockUsers } from '@/lib/mockData';
 import UsersTable from './UsersTable';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata = {
 	title: 'User Management — STEM-ACT Admin',
 };
 
-async function getUsers() {
-	const result = await pool.query(`
-		SELECT
-			u.user_id,
-			u.email,
-			u.role,
-			o.org_name
-		FROM users u
-		LEFT JOIN organizations o ON u.org_id = o.org_id
-		ORDER BY
-			CASE u.role
-				WHEN 'super_admin' THEN 1
-				WHEN 'admin'       THEN 2
-				WHEN 'partner'     THEN 3
-			END,
-			u.email
-	`);
-	return result.rows;
-}
-
-export default async function UsersPage() {
-	const users = await getUsers();
+export default function UsersPage() {
+	const users = mockUsers;
 
 	const stats = {
 		total:       users.length,
@@ -60,7 +38,7 @@ export default async function UsersPage() {
 				</div>
 			</div>
 
-			<UsersTable users={JSON.parse(JSON.stringify(users))} />
+			<UsersTable users={users} />
 		</main>
 	);
 }
