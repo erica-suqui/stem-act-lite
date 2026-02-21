@@ -1,15 +1,32 @@
 'use client';
-import LogIn from './components/LogIn';
 
+import { mockEvents, mockOrganizations } from '@/lib/mockData';
+import EventsTable from './components/EventsTable';
+import StatsCards from './components/StatsCards';
+import OrganizationsTable from './components/OrganizationsTable';
 
-export default function LogInPage() {
+export default function Dashboard() {
+	const events = mockEvents;
+	const organizations = mockOrganizations;
 
-   
-    return (
-        <main className="login-container">
-            <h2 >Log In</h2>
-            <LogIn/>
-            <h5>Not a User? Please <a href = '/register'><span>Register</span> </a>here first</h5>
-        </main>
-    );
+	const stats = {
+		pending:  events.filter(e => e.status === 'pending').length,
+		approved: events.filter(e => e.status === 'approved').length,
+		denied:   events.filter(e => e.status === 'denied').length,
+		total:    events.length,
+	};
+
+	return (
+		<main className="dashboard">
+			<h1 className="page-title">Event Submissions</h1>
+			<StatsCards stats={stats} />
+			<EventsTable
+				events={events}
+				organizations={organizations}
+			/>
+
+			<h2>Partner Organizations</h2>
+			<OrganizationsTable organizations={organizations} />
+		</main>
+	);
 }

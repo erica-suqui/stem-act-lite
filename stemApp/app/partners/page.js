@@ -1,30 +1,18 @@
-import pool from '@/lib/db';
+import { mockOrganizations, mockEvents } from '@/lib/mockData';
 import PartnersTable from './PartnersTable';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata = {
 	title: 'Partner Organizations — STEM-ACT Admin',
 };
 
-async function getOrganizations() {
-	const result = await pool.query(`
-		SELECT
-			o.*,
-			COUNT(e.event_id)                                        AS event_count,
-			COUNT(e.event_id) FILTER (WHERE e.status = 'pending')   AS pending_count,
-			COUNT(e.event_id) FILTER (WHERE e.status = 'approved')  AS approved_count,
-			COUNT(e.event_id) FILTER (WHERE e.status = 'denied')    AS denied_count
-		FROM organizations o
-		LEFT JOIN events e ON e.org_id = o.org_id
-		GROUP BY o.org_id
-		ORDER BY o.org_name
-	`);
-	return result.rows;
-}
-
-export default async function PartnersPage() {
-	const organizations = await getOrganizations();
+export default function PartnersPage() {
+	const organizations = mockOrganizations.map(org => ({
+		...org,
+		event_count:    mockEvents.filter(e => e.org_id === org.org_id).length,
+		pending_count:  mockEvents.filter(e => e.org_id === org.org_id && e.status === 'pending').length,
+		approved_count: mockEvents.filter(e => e.org_id === org.org_id && e.status === 'approved').length,
+		denied_count:   mockEvents.filter(e => e.org_id === org.org_id && e.status === 'denied').length,
+	}));
 
 	const stats = {
 		total:    organizations.length,
@@ -56,7 +44,7 @@ export default async function PartnersPage() {
 				</div>
 			</div>
 
-			<PartnersTable organizations={JSON.parse(JSON.stringify(organizations))} />
+			<PartnersTable organizations={organizations} />
 		</main>
 	);
 }
