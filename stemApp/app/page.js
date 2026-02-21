@@ -9,7 +9,7 @@ async function getEvents() {
 	const result = await pool.query(`
 		SELECT e.*, o.org_name
 		FROM events e
-		JOIN organizations o ON e.org_id = o.org_id
+		LEFT JOIN organizations o ON e.org_id = o.org_id
 		ORDER BY e.submitted_at DESC
 	`);
 	return result.rows;

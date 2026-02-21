@@ -130,6 +130,54 @@ body {
 	letter-spacing: 0.05em;
 }
 
+/* Tabs */
+.tabs {
+	display: flex;
+	border-bottom: 2px solid #ddd;
+	margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1.5rem;
+	background: none;
+	border: none;
+	border-bottom: 3px solid transparent;
+	margin-bottom: -2px;
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: #595959;
+	cursor: pointer;
+	transition: color 0.15s ease;
+	min-height: 44px;
+}
+
+.tab-btn:hover {
+	color: #1a1a2e;
+}
+
+.tab-btn.tab-active {
+	color: #1a1a2e;
+	border-bottom-color: #64ffda;
+}
+
+.tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: 10px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	background: #fef3cd;
+	color: #7d5800;
+	border: 1px solid #f0ad4e;
+}
+
 /* Filter Bar */
 .filter-bar {
 	margin-bottom: 1rem;

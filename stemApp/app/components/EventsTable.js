@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import DenyModal from './DenyModal';
@@ -15,6 +15,7 @@ const STATUS_META = {
 
 export default function EventsTable({ events, organizations }) {
 	const router = useRouter();
+	const [activeTab, setActiveTab] = useState('partner');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [orgFilter, setOrgFilter] = useState('all');
 	const [expandedId, setExpandedId] = useState(null);
@@ -23,11 +24,26 @@ export default function EventsTable({ events, organizations }) {
 	const [loadingId, setLoadingId] = useState(null);
 	const [toasts, setToasts] = useState([]);
 
-	const filtered = events.filter(e => {
+	const partnerEvents = useMemo(() => events.filter(e => e.org_id != null), [events]);
+	const viewerEvents  = useMemo(() => events.filter(e => e.org_id == null), [events]);
+
+	const partnerPending = useMemo(() => partnerEvents.filter(e => e.status === 'pending').length, [partnerEvents]);
+	const viewerPending  = useMemo(() => viewerEvents.filter(e => e.status === 'pending').length, [viewerEvents]);
+
+	const tabEvents = activeTab === 'partner' ? partnerEvents : viewerEvents;
+
+	const filtered = tabEvents.filter(e => {
 		const matchStatus = statusFilter === 'all' || e.status === statusFilter;
-		const matchOrg = orgFilter === 'all' || String(e.org_id) === orgFilter;
+		const matchOrg    = activeTab === 'viewer' || orgFilter === 'all' || String(e.org_id) === orgFilter;
 		return matchStatus && matchOrg;
 	});
+
+	function switchTab(tab) {
+		setActiveTab(tab);
+		setStatusFilter('all');
+		setOrgFilter('all');
+		setExpandedId(null);
+	}
 
 	function addToast(message, type = 'success') {
 		const id = Date.now();
@@ -35,7 +51,6 @@ export default function EventsTable({ events, organizations }) {
 		if (type === 'success') {
 			setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
 		}
-		// Errors persist until manually dismissed
 	}
 
 	function dismissToast(id) {
@@ -50,7 +65,7 @@ export default function EventsTable({ events, organizations }) {
 			const data = await res.json();
 			if (data.success) {
 				addToast(`"${title}" has been approved and published.`, 'success');
-				router.refresh(); // Refresh server data without full page reload
+				router.refresh();
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -97,6 +112,35 @@ export default function EventsTable({ events, organizations }) {
 
 	return (
 		<>
+			<div className="tabs" role="tablist" aria-label="Event submission type">
+				<button
+					role="tab"
+					aria-selected={activeTab === 'partner'}
+					className={`tab-btn${activeTab === 'partner' ? ' tab-active' : ''}`}
+					onClick={() => switchTab('partner')}
+				>
+					Partner Events
+					{activeTab === 'viewer' && partnerPending > 0 && (
+						<span className="tab-badge" aria-label={`${partnerPending} pending partner submissions`}>
+							{partnerPending}
+						</span>
+					)}
+				</button>
+				<button
+					role="tab"
+					aria-selected={activeTab === 'viewer'}
+					className={`tab-btn${activeTab === 'viewer' ? ' tab-active' : ''}`}
+					onClick={() => switchTab('viewer')}
+				>
+					Viewer Events
+					{activeTab === 'partner' && viewerPending > 0 && (
+						<span className="tab-badge" aria-label={`${viewerPending} pending viewer submissions`}>
+							{viewerPending}
+						</span>
+					)}
+				</button>
+			</div>
+
 			<div className="filter-bar" aria-label="Filter events">
 				<label htmlFor="status-filter">Status:</label>
 				<select
@@ -110,19 +154,23 @@ export default function EventsTable({ events, organizations }) {
 					<option value="denied">Denied</option>
 				</select>
 
-				<label htmlFor="org-filter">Organization:</label>
-				<select
-					id="org-filter"
-					value={orgFilter}
-					onChange={e => setOrgFilter(e.target.value)}
-				>
-					<option value="all">All organizations</option>
-					{organizations.map(org => (
-						<option key={org.org_id} value={String(org.org_id)}>
-							{org.org_name}
-						</option>
-					))}
-				</select>
+				{activeTab === 'partner' && (
+					<>
+						<label htmlFor="org-filter">Organization:</label>
+						<select
+							id="org-filter"
+							value={orgFilter}
+							onChange={e => setOrgFilter(e.target.value)}
+						>
+							<option value="all">All organizations</option>
+							{organizations.map(org => (
+								<option key={org.org_id} value={String(org.org_id)}>
+									{org.org_name}
+								</option>
+							))}
+						</select>
+					</>
+				)}
 
 				<span className="result-count" aria-live="polite" aria-atomic="true">
 					{filtered.length} {filtered.length === 1 ? 'event' : 'events'}
@@ -132,12 +180,12 @@ export default function EventsTable({ events, organizations }) {
 			<div className="table-wrapper">
 				<table className="data-table">
 					<caption className="table-caption">
-						Event submissions — {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
+						{activeTab === 'partner' ? 'Partner' : 'Viewer'} event submissions — {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
 					</caption>
 					<thead>
 						<tr>
 							<th scope="col">Event Title</th>
-							<th scope="col">Organization</th>
+							<th scope="col">{activeTab === 'partner' ? 'Organization' : 'Submitted By'}</th>
 							<th scope="col">Date</th>
 							<th scope="col">Location</th>
 							<th scope="col">Audience</th>
@@ -172,7 +220,7 @@ export default function EventsTable({ events, organizations }) {
 											)}
 										</td>
 										<td>
-											{event.org_name}
+											{event.org_name ?? <em>No organization</em>}
 											<br />
 											<small>{event.contact_email}</small>
 										</td>
@@ -277,7 +325,7 @@ export default function EventsTable({ events, organizations }) {
 						{filtered.length === 0 && (
 							<tr>
 								<td colSpan={9} className="no-data">
-									No events match the selected filters.
+									No {activeTab === 'partner' ? 'partner' : 'viewer'} events match the selected filters.
 								</td>
 							</tr>
 						)}
