@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import DenyModal from './DenyModal';
 import ApproveModal from './ApproveModal';
+import RevokeModal from './RevokeModal';
+import StatsCards from './StatsCards';
 import Toast from './Toast';
 
 const STATUS_META = {
@@ -13,16 +14,18 @@ const STATUS_META = {
 	denied:   { Icon: XCircle,     label: 'Denied' },
 };
 
-export default function EventsTable({ events, organizations }) {
-	const router = useRouter();
-	const [activeTab, setActiveTab] = useState('partner');
+export default function EventsTable({ events: initialEvents, organizations }) {
+	const [events, setEvents]           = useState(initialEvents);
+	const [activeTab, setActiveTab]     = useState('partner');
 	const [statusFilter, setStatusFilter] = useState('all');
-	const [orgFilter, setOrgFilter] = useState('all');
-	const [expandedId, setExpandedId] = useState(null);
-	const [denyTarget, setDenyTarget] = useState(null);
+	const [orgFilter, setOrgFilter]     = useState('all');
+	const [search, setSearch]           = useState('');
+	const [expandedId, setExpandedId]   = useState(null);
+	const [denyTarget, setDenyTarget]   = useState(null);
 	const [approveTarget, setApproveTarget] = useState(null);
-	const [loadingId, setLoadingId] = useState(null);
-	const [toasts, setToasts] = useState([]);
+	const [revokeTarget, setRevokeTarget]   = useState(null);
+	const [loadingId, setLoadingId]     = useState(null);
+	const [toasts, setToasts]           = useState([]);
 
 	const partnerEvents = useMemo(() => events.filter(e => e.org_id != null), [events]);
 	const viewerEvents  = useMemo(() => events.filter(e => e.org_id == null), [events]);
@@ -30,18 +33,27 @@ export default function EventsTable({ events, organizations }) {
 	const partnerPending = useMemo(() => partnerEvents.filter(e => e.status === 'pending').length, [partnerEvents]);
 	const viewerPending  = useMemo(() => viewerEvents.filter(e => e.status === 'pending').length, [viewerEvents]);
 
+	const stats = useMemo(() => ({
+		pending:  events.filter(e => e.status === 'pending').length,
+		approved: events.filter(e => e.status === 'approved').length,
+		denied:   events.filter(e => e.status === 'denied').length,
+		total:    events.length,
+	}), [events]);
+
 	const tabEvents = activeTab === 'partner' ? partnerEvents : viewerEvents;
 
 	const filtered = tabEvents.filter(e => {
 		const matchStatus = statusFilter === 'all' || e.status === statusFilter;
 		const matchOrg    = activeTab === 'viewer' || orgFilter === 'all' || String(e.org_id) === orgFilter;
-		return matchStatus && matchOrg;
+		const matchSearch = search === '' || e.title.toLowerCase().includes(search.toLowerCase());
+		return matchStatus && matchOrg && matchSearch;
 	});
 
 	function switchTab(tab) {
 		setActiveTab(tab);
 		setStatusFilter('all');
 		setOrgFilter('all');
+		setSearch('');
 		setExpandedId(null);
 	}
 
@@ -57,15 +69,19 @@ export default function EventsTable({ events, organizations }) {
 		setToasts(prev => prev.filter(t => t.id !== id));
 	}
 
+	function updateEvent(eventId, patch) {
+		setEvents(prev => prev.map(e => e.event_id === eventId ? { ...e, ...patch } : e));
+	}
+
 	const handleApprove = useCallback(async (eventId, title) => {
 		setLoadingId(eventId);
 		setApproveTarget(null);
 		try {
-			const res = await fetch(`/api/events/${eventId}/approve`, { method: 'POST' });
+			const res  = await fetch(`/api/events/${eventId}/approve`, { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
+				updateEvent(eventId, { status: 'approved', admin_comment: null });
 				addToast(`"${title}" has been approved and published.`, 'success');
-				router.refresh();
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -74,21 +90,21 @@ export default function EventsTable({ events, organizations }) {
 		} finally {
 			setLoadingId(null);
 		}
-	}, [router]);
+	}, []);
 
 	const handleDeny = useCallback(async (eventId, title, comment) => {
 		setLoadingId(eventId);
 		setDenyTarget(null);
 		try {
-			const res = await fetch(`/api/events/${eventId}/deny`, {
+			const res  = await fetch(`/api/events/${eventId}/deny`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ comment }),
 			});
 			const data = await res.json();
 			if (data.success) {
-				addToast(`"${title}" has been denied. The partner has been notified.`, 'success');
-				router.refresh();
+				updateEvent(eventId, { status: 'denied', admin_comment: comment });
+				addToast(`"${title}" has been denied.`, 'success');
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -97,7 +113,26 @@ export default function EventsTable({ events, organizations }) {
 		} finally {
 			setLoadingId(null);
 		}
-	}, [router]);
+	}, []);
+
+	const handleRevoke = useCallback(async (eventId, title) => {
+		setLoadingId(eventId);
+		setRevokeTarget(null);
+		try {
+			const res  = await fetch(`/api/events/${eventId}/revoke`, { method: 'POST' });
+			const data = await res.json();
+			if (data.success) {
+				updateEvent(eventId, { status: 'pending', admin_comment: null });
+				addToast(`"${title}" has been revoked and returned to pending.`, 'success');
+			} else {
+				addToast('Error: ' + data.message, 'error');
+			}
+		} catch {
+			addToast('Network error. Please try again.', 'error');
+		} finally {
+			setLoadingId(null);
+		}
+	}, []);
 
 	function formatDate(dateStr) {
 		return new Date(dateStr).toLocaleDateString('en-US', {
@@ -112,6 +147,7 @@ export default function EventsTable({ events, organizations }) {
 
 	return (
 		<>
+			<StatsCards stats={stats} />
 			<div className="tabs" role="tablist" aria-label="Event submission type">
 				<button
 					role="tab"
@@ -142,6 +178,16 @@ export default function EventsTable({ events, organizations }) {
 			</div>
 
 			<div className="filter-bar" aria-label="Filter events">
+				<label htmlFor="event-search">Search:</label>
+				<input
+					id="event-search"
+					type="search"
+					value={search}
+					onChange={e => setSearch(e.target.value)}
+					placeholder="Filter by title…"
+					aria-label="Search events by title"
+				/>
+
 				<label htmlFor="status-filter">Status:</label>
 				<select
 					id="status-filter"
@@ -197,7 +243,7 @@ export default function EventsTable({ events, organizations }) {
 					</thead>
 					<tbody>
 						{filtered.map(event => {
-							const isLoading = loadingId === event.event_id;
+							const isLoading  = loadingId === event.event_id;
 							const statusMeta = STATUS_META[event.status];
 							const StatusIcon = statusMeta?.Icon;
 							return (
@@ -220,7 +266,10 @@ export default function EventsTable({ events, organizations }) {
 											)}
 										</td>
 										<td>
-											{event.org_name ?? <em>No organization</em>}
+											{activeTab === 'partner'
+												? event.org_name
+												: (event.submitter_name ?? <em>Unknown</em>)
+											}
 											<br />
 											<small>{event.contact_email}</small>
 										</td>
@@ -273,7 +322,7 @@ export default function EventsTable({ events, organizations }) {
 											{event.status === 'approved' && (
 												<button
 													className={`btn btn-deny${isLoading ? ' btn-loading' : ''}`}
-													onClick={() => setDenyTarget(event)}
+													onClick={() => setRevokeTarget(event)}
 													disabled={isLoading}
 													aria-label={`Revoke approval for: ${event.title}`}
 												>
@@ -345,6 +394,13 @@ export default function EventsTable({ events, organizations }) {
 					event={denyTarget}
 					onDeny={(comment) => handleDeny(denyTarget.event_id, denyTarget.title, comment)}
 					onClose={() => setDenyTarget(null)}
+				/>
+			)}
+			{revokeTarget && (
+				<RevokeModal
+					event={revokeTarget}
+					onRevoke={() => handleRevoke(revokeTarget.event_id, revokeTarget.title)}
+					onClose={() => setRevokeTarget(null)}
 				/>
 			)}
 
