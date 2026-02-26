@@ -11,11 +11,26 @@ const STATUS_META = {
 	disabled: { Icon: XCircle,     label: 'Disabled' },
 };
 
+const STAT_CARDS = [
+	{ filterValue: 'all',      className: 'stat-total',    label: 'Total',    key: 'total' },
+	{ filterValue: 'active',   className: 'stat-approved', label: 'Active',   key: 'active' },
+	{ filterValue: 'pending',  className: 'stat-pending',  label: 'Pending',  key: 'pending' },
+	{ filterValue: 'disabled', className: 'stat-denied',   label: 'Disabled', key: 'disabled' },
+];
+
 export default function PartnersTable({ organizations: initialOrganizations }) {
 	const [organizations, setOrganizations] = useState(initialOrganizations);
 	const [search, setSearch] = useState('');
+	const [statusFilter, setStatusFilter] = useState('all');
 	const [loadingId, setLoadingId] = useState(null);
 	const [toasts, setToasts] = useState([]);
+
+	const stats = {
+		total:    organizations.length,
+		active:   organizations.filter(o => o.status === 'active').length,
+		pending:  organizations.filter(o => o.status === 'pending').length,
+		disabled: organizations.filter(o => o.status === 'disabled').length,
+	};
 
 	function addToast(message, type = 'success') {
 		const id = Date.now();
@@ -32,10 +47,9 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 
 	const filtered = organizations.filter(org => {
 		const q = search.toLowerCase();
-		return (
-			org.org_name.toLowerCase().includes(q) ||
-			org.contact_email.toLowerCase().includes(q)
-		);
+		const matchSearch = org.org_name.toLowerCase().includes(q) || org.contact_email.toLowerCase().includes(q);
+		const matchStatus = statusFilter === 'all' || org.status === statusFilter;
+		return matchSearch && matchStatus;
 	});
 
 	const updateStatus = useCallback(async (orgId, orgName, status) => {
@@ -62,6 +76,24 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 
 	return (
 		<>
+			<div className="stats-grid">
+				{STAT_CARDS.map(({ filterValue, className, label, key }) => {
+					const isActive = statusFilter === filterValue;
+					return (
+						<button
+							key={key}
+							className={`stat-card ${className}${isActive ? ' stat-card-active' : ''}`}
+							onClick={() => setStatusFilter(filterValue)}
+							aria-pressed={isActive}
+							aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()} organization${stats[key] !== 1 ? 's' : ''}`}
+						>
+							<span className="stat-number">{stats[key]}</span>
+							<span className="stat-label">{label}</span>
+						</button>
+					);
+				})}
+			</div>
+
 			<div className="filter-bar" aria-label="Search partners">
 				<label htmlFor="partner-search">Search:</label>
 				<input
