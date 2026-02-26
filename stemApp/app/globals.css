@@ -104,6 +104,24 @@ body {
 	text-align: center;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	border-top: 4px solid #ccc;
+	cursor: pointer;
+	transition: box-shadow 0.15s ease, transform 0.1s ease;
+	/* reset button styles */
+	border-left: none;
+	border-right: none;
+	border-bottom: none;
+	font: inherit;
+	width: 100%;
+}
+
+.stat-card:hover {
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+.stat-card.stat-card-active {
+	box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.5), 0 4px 10px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
 }
 
 .stat-card.stat-pending { border-top-color: #f0ad4e; }
@@ -293,7 +311,7 @@ body {
 
 /* Role badges */
 .role-super_admin { background: #e8d5f5; color: #5b2c8d; }
-.role-admin { background: #d0e8ff; color: #0c4a8a; }
+.role-admin { background: #ffd0d0; color: #8a0c0c; }
 .role-partner { background: #e2f0fb; color: #1a5276; }
 
 /* Invite section */
@@ -558,6 +576,46 @@ body {
 	font-size: 0.9rem;
 	margin-bottom: 1.5rem;
 	background: #fff;
+}
+
+/* Partner detail page */
+.org-detail-card {
+	background: #fff;
+	border-radius: 8px;
+	padding: 1.5rem 2rem;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	margin-bottom: 1rem;
+}
+
+.org-detail-grid {
+	display: grid;
+	grid-template-columns: 140px 1fr;
+	gap: 0.5rem 1rem;
+	align-items: baseline;
+}
+
+.org-detail-grid dt {
+	font-weight: 600;
+	color: #555;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.org-detail-grid dd {
+	color: #1a1a2e;
+	margin: 0;
+}
+
+/* Clickable partner name link */
+.data-table td a:not([href^="mailto"]) {
+	color: #0b6b8a;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.data-table td a:not([href^="mailto"]):hover {
+	text-decoration: underline;
 }
 
 /* Loading spinner */

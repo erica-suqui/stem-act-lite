@@ -1,0 +1,169 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Clock, CheckCircle, XCircle } from 'lucide-react';
+import { mockOrganizations, mockEvents } from '@/lib/mockData';
+
+const STATUS_META = {
+	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
+	approved: { Icon: CheckCircle,  label: 'Approved', className: 'status-approved' },
+	denied:   { Icon: XCircle,      label: 'Denied',   className: 'status-denied' },
+};
+
+export async function generateMetadata({ params }) {
+	const { id } = await params;
+	const org = mockOrganizations.find(o => o.org_id === Number(id));
+	return {
+		title: org ? `${org.org_name} — STEM-ACT Admin` : 'Partner Not Found',
+	};
+}
+
+export default async function PartnerDetailPage({ params }) {
+	const { id } = await params;
+	const org = mockOrganizations.find(o => o.org_id === Number(id));
+	if (!org) notFound();
+
+	const events = mockEvents.filter(e => e.org_id === org.org_id);
+
+	const pending  = events.filter(e => e.status === 'pending').length;
+	const approved = events.filter(e => e.status === 'approved').length;
+	const denied   = events.filter(e => e.status === 'denied').length;
+
+	function formatDate(dateStr) {
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			month: 'short', day: 'numeric', year: 'numeric',
+		});
+	}
+
+	return (
+		<main className="dashboard">
+			<nav aria-label="Breadcrumb" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
+				<Link href="/partners" style={{ color: '#0b6b8a', textDecoration: 'none' }}>
+					← Partner Organizations
+				</Link>
+			</nav>
+
+			<h1 className="page-title">{org.org_name}</h1>
+
+			<div className="org-detail-card">
+				<dl className="org-detail-grid">
+					<dt>Contact Name</dt>
+					<dd>{org.contact_name || '—'}</dd>
+
+					<dt>Email</dt>
+					<dd>
+						<a href={`mailto:${org.contact_email}`}>{org.contact_email}</a>
+					</dd>
+
+					<dt>Phone</dt>
+					<dd>{org.contact_phone || '—'}</dd>
+
+					<dt>Status</dt>
+					<dd>
+						<span className={`status-badge status-${org.status}`}>
+							{org.status.charAt(0).toUpperCase() + org.status.slice(1)}
+						</span>
+					</dd>
+				</dl>
+			</div>
+
+			<h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '2rem 0 1rem', color: '#1a1a2e' }}>
+				Event Submissions
+			</h2>
+
+			<div className="stats-grid">
+				<div className="stat-card stat-total">
+					<span className="stat-number">{events.length}</span>
+					<span className="stat-label">Total</span>
+				</div>
+				<div className="stat-card stat-pending">
+					<span className="stat-number">{pending}</span>
+					<span className="stat-label">Pending</span>
+				</div>
+				<div className="stat-card stat-approved">
+					<span className="stat-number">{approved}</span>
+					<span className="stat-label">Approved</span>
+				</div>
+				<div className="stat-card stat-denied">
+					<span className="stat-number">{denied}</span>
+					<span className="stat-label">Denied</span>
+				</div>
+			</div>
+
+			{events.length === 0 ? (
+				<p className="no-data" style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+					This organization has not submitted any events yet.
+				</p>
+			) : (
+				<div className="table-wrapper">
+					<table className="data-table">
+						<caption className="table-caption">
+							Event submissions from {org.org_name} — {events.length} {events.length === 1 ? 'result' : 'results'}
+						</caption>
+						<thead>
+							<tr>
+								<th scope="col">Event Title</th>
+								<th scope="col">Submitted By</th>
+								<th scope="col">Date</th>
+								<th scope="col">Location</th>
+								<th scope="col">Status</th>
+								<th scope="col">Submitted</th>
+							</tr>
+						</thead>
+						<tbody>
+							{events.map(event => {
+								const meta     = STATUS_META[event.status];
+								const StatusIcon = meta?.Icon;
+								return (
+									<tr key={event.event_id}>
+										<td>
+											<strong>{event.title}</strong>
+											{event.event_link && (
+												<>
+													<br />
+													<a
+														href={event.event_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														aria-label={`${event.title} — external link (opens in new tab)`}
+													>
+														Event Link
+													</a>
+												</>
+											)}
+										</td>
+										<td>
+											{event.contact_email}
+										</td>
+										<td>
+											{formatDate(event.start_datetime)}
+											{event.end_datetime && (
+												<>
+													<br />
+													<small>to {formatDate(event.end_datetime)}</small>
+												</>
+											)}
+										</td>
+										<td>
+											{event.city}, {event.county}
+											<br />
+											<small>{event.address}</small>
+										</td>
+										<td>
+											<span className={`status-badge ${meta?.className ?? ''}`}>
+												{StatusIcon && (
+													<StatusIcon size={12} aria-hidden="true" style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+												)}
+												{meta?.label ?? event.status}
+											</span>
+										</td>
+										<td>{formatDate(event.submitted_at)}</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
+			)}
+		</main>
+	);
+}

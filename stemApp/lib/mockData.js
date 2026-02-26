@@ -7,10 +7,10 @@ export const mockUsers = [
 ];
 
 export const mockOrganizations = [
-	{ org_id: 1, org_name: 'Yale STEM Outreach',       contact_email: 'stem@yale.edu',       contact_phone: '203-555-0101', status: 'active' },
-	{ org_id: 2, org_name: 'CT Science Center',         contact_email: 'events@ctsci.org',    contact_phone: '860-555-0202', status: 'active' },
-	{ org_id: 3, org_name: 'Wilbur Elementary School',  contact_email: 'mfrank@wilbur.edu',   contact_phone: '203-555-0303', status: 'active' },
-	{ org_id: 4, org_name: 'New Haven Public Library',  contact_email: 'programs@nhpl.org',   contact_phone: '203-555-0404', status: 'pending' },
+	{ org_id: 1, org_name: 'Yale STEM Outreach',       contact_name: 'Dr. Emily Chen',    contact_email: 'stem@yale.edu',       contact_phone: '203-555-0101', status: 'active' },
+	{ org_id: 2, org_name: 'CT Science Center',         contact_name: 'James Kowalski',    contact_email: 'events@ctsci.org',    contact_phone: '860-555-0202', status: 'active' },
+	{ org_id: 3, org_name: 'Wilbur Elementary School',  contact_name: 'Maria Frank',       contact_email: 'mfrank@wilbur.edu',   contact_phone: '203-555-0303', status: 'active' },
+	{ org_id: 4, org_name: 'New Haven Public Library',  contact_name: 'Thomas Rivera',     contact_email: 'programs@nhpl.org',   contact_phone: '203-555-0404', status: 'pending' },
 ];
 
 export const mockEvents = [
