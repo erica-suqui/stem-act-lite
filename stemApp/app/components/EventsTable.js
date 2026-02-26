@@ -147,7 +147,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 
 	return (
 		<>
-			<StatsCards stats={stats} />
+			<StatsCards
+				stats={stats}
+				onFilter={setStatusFilter}
+				activeFilter={statusFilter}
+			/>
 			<div className="tabs" role="tablist" aria-label="Event submission type">
 				<button
 					role="tab"

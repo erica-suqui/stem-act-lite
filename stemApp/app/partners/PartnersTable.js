@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import Toast from '../components/Toast';
 
@@ -11,8 +11,8 @@ const STATUS_META = {
 	disabled: { Icon: XCircle,     label: 'Disabled' },
 };
 
-export default function PartnersTable({ organizations }) {
-	const router = useRouter();
+export default function PartnersTable({ organizations: initialOrganizations }) {
+	const [organizations, setOrganizations] = useState(initialOrganizations);
 	const [search, setSearch] = useState('');
 	const [loadingId, setLoadingId] = useState(null);
 	const [toasts, setToasts] = useState([]);
@@ -48,8 +48,8 @@ export default function PartnersTable({ organizations }) {
 			});
 			const data = await res.json();
 			if (data.success) {
+				setOrganizations(prev => prev.map(o => o.org_id === orgId ? { ...o, status } : o));
 				addToast(`${orgName} has been set to ${status}.`, 'success');
-				router.refresh();
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -58,7 +58,7 @@ export default function PartnersTable({ organizations }) {
 		} finally {
 			setLoadingId(null);
 		}
-	}, [router]);
+	}, []);
 
 	return (
 		<>
@@ -87,6 +87,7 @@ export default function PartnersTable({ organizations }) {
 					<thead>
 						<tr>
 							<th scope="col">Organization</th>
+							<th scope="col">Contact Name</th>
 							<th scope="col">Contact Email</th>
 							<th scope="col">Phone</th>
 							<th scope="col">Events</th>
@@ -101,7 +102,12 @@ export default function PartnersTable({ organizations }) {
 							const StatusIcon = statusMeta.Icon;
 							return (
 								<tr key={org.org_id}>
-									<td><strong>{org.org_name}</strong></td>
+									<td>
+									<Link href={`/partners/${org.org_id}`}>
+										<strong>{org.org_name}</strong>
+									</Link>
+								</td>
+									<td>{org.contact_name || '—'}</td>
 									<td>
 										<a
 											href={`mailto:${org.contact_email}`}
@@ -171,7 +177,7 @@ export default function PartnersTable({ organizations }) {
 						})}
 						{filtered.length === 0 && (
 							<tr>
-								<td colSpan={6} className="no-data">
+								<td colSpan={7} className="no-data">
 									No organizations match your search.
 								</td>
 							</tr>

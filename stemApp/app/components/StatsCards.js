@@ -1,24 +1,30 @@
 'use client';
 
-export default function StatsCards({ stats }) {
+export default function StatsCards({ stats, onFilter, activeFilter }) {
+	const cards = [
+		{ key: 'pending',  filterValue: 'pending',  className: 'stat-pending',  label: 'Pending' },
+		{ key: 'approved', filterValue: 'approved', className: 'stat-approved', label: 'Approved' },
+		{ key: 'denied',   filterValue: 'denied',   className: 'stat-denied',   label: 'Denied' },
+		{ key: 'total',    filterValue: 'all',       className: 'stat-total',    label: 'Total' },
+	];
+
 	return (
 		<div className="stats-grid">
-			<div className="stat-card stat-pending">
-				<span className="stat-number">{stats.pending}</span>
-				<span className="stat-label">Pending</span>
-			</div>
-			<div className="stat-card stat-approved">
-				<span className="stat-number">{stats.approved}</span>
-				<span className="stat-label">Approved</span>
-			</div>
-			<div className="stat-card stat-denied">
-				<span className="stat-number">{stats.denied}</span>
-				<span className="stat-label">Denied</span>
-			</div>
-			<div className="stat-card stat-total">
-				<span className="stat-number">{stats.total}</span>
-				<span className="stat-label">Total</span>
-			</div>
+			{cards.map(({ key, filterValue, className, label }) => {
+				const isActive = activeFilter === filterValue;
+				return (
+					<button
+						key={key}
+						className={`stat-card ${className}${isActive ? ' stat-card-active' : ''}`}
+						onClick={() => onFilter(filterValue)}
+						aria-pressed={isActive}
+						aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()} event${stats[key] !== 1 ? 's' : ''}`}
+					>
+						<span className="stat-number">{stats[key]}</span>
+						<span className="stat-label">{label}</span>
+					</button>
+				);
+			})}
 		</div>
 	);
 }
