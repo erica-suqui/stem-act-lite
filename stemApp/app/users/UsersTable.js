@@ -11,6 +11,13 @@ const ROLE_META = {
 	partner:     { Icon: Building2,   label: 'Partner' },
 };
 
+const ROLE_CARDS = [
+	{ filterValue: 'all',         className: 'stat-total',    label: 'Total Users',  key: 'total' },
+	{ filterValue: 'super_admin', className: 'stat-approved', label: 'Super Admins', key: 'superAdmins' },
+	{ filterValue: 'admin',       className: 'stat-pending',  label: 'Admins',       key: 'admins' },
+	{ filterValue: 'partner',     className: 'stat-denied',   label: 'Partners',     key: 'partners' },
+];
+
 export default function UsersTable({ users }) {
 	const router = useRouter();
 	const [search, setSearch] = useState('');
@@ -142,8 +149,33 @@ export default function UsersTable({ users }) {
 		? superAdminUser
 		: null;
 
+	const stats = {
+		total:       users.length,
+		superAdmins: users.filter(u => u.role === 'super_admin').length,
+		admins:      users.filter(u => u.role === 'admin').length,
+		partners:    users.filter(u => u.role === 'partner').length,
+	};
+
 	return (
 		<>
+			<div className="stats-grid">
+				{ROLE_CARDS.map(({ filterValue, className, label, key }) => {
+					const isActive = roleFilter === filterValue;
+					return (
+						<button
+							key={key}
+							className={`stat-card ${className}${isActive ? ' stat-card-active' : ''}`}
+							onClick={() => setRoleFilter(filterValue)}
+							aria-pressed={isActive}
+							aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()}`}
+						>
+							<span className="stat-number">{stats[key]}</span>
+							<span className="stat-label">{label}</span>
+						</button>
+					);
+				})}
+			</div>
+
 			{/* Invite Link Generator (US011) */}
 			<section className="invite-section" aria-labelledby="invite-heading">
 				<h3 id="invite-heading">Generate Admin Invite Link</h3>
