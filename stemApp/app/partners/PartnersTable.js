@@ -4,7 +4,11 @@ import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import Toast from '../components/Toast';
+<<<<<<< HEAD
 import { useToast } from '@/hooks/useToast';
+=======
+import { apiUrl } from '@/lib/api';
+>>>>>>> 1569cfc (update: backend API and integration of API routes, auditting next.js temp endpoints)
 
 const STATUS_META = {
 	active:   { Icon: CheckCircle, label: 'Active' },
@@ -43,7 +47,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 	const updateStatus = useCallback(async (orgId, orgName, status) => {
 		setLoadingId(orgId);
 		try {
-			const res = await fetch(`/api/organizations/${orgId}/status`, {
+			const res = await fetch(apiUrl(`/api/organizations/${orgId}/status`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ status }),

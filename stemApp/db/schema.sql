@@ -9,10 +9,11 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS organizations (
   org_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   org_name      TEXT NOT NULL,
+  contact_name  TEXT NULL,
   contact_email TEXT NOT NULL,
   contact_phone TEXT NOT NULL,
   status        TEXT NOT NULL DEFAULT 'pending'
-               CHECK (status IN ('pending','approved','rejected','inactive'))
+               CHECK (status IN ('pending','active','disabled','approved','rejected','inactive'))
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   email     TEXT NOT NULL UNIQUE,
   role      TEXT NOT NULL
-           CHECK (role IN ('admin','partner'))
+           CHECK (role IN ('super_admin','admin','partner'))
 );
 
 -- =========================
@@ -70,9 +71,12 @@ CREATE TABLE IF NOT EXISTS events (
   cost                 TEXT NULL, 
   hyperlink            TEXT NULL,
   event_contact        TEXT NULL,
+  admin_comment        TEXT NULL,
+  reviewed_by_user_id  BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+  reviewed_at          TIMESTAMPTZ NULL,
 
   status               TEXT NOT NULL DEFAULT 'pending'
-                      CHECK (status IN ('pending','approved','rejected')),
+                      CHECK (status IN ('pending','approved','denied','rejected')),
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT chk_event_end_after_start
@@ -93,8 +97,22 @@ CREATE TABLE IF NOT EXISTS event_revisions (
   submitter_phone      TEXT NULL,
 
   status               TEXT NOT NULL DEFAULT 'pending'
-                      CHECK (status IN ('pending','approved','rejected')),
+                      CHECK (status IN ('pending','approved','denied','rejected')),
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =========================
+-- INVITATIONS
+-- =========================
+
+CREATE TABLE IF NOT EXISTS invitations (
+  invitation_id  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  token          TEXT NOT NULL UNIQUE,
+  role           TEXT NOT NULL CHECK (role IN ('super_admin','admin')),
+  expires_at     TIMESTAMPTZ NOT NULL,
+  consumed_at    TIMESTAMPTZ NULL,
+  created_by_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- =========================
@@ -137,5 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_event_revisions_evt ON event_revisions(event_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_evt   ON notifications(event_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_app   ON notifications(application_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_stat  ON notifications(status);
+CREATE INDEX IF NOT EXISTS idx_invitations_token   ON invitations(token);
+CREATE INDEX IF NOT EXISTS idx_invitations_exp     ON invitations(expires_at);
 
 COMMIT;

@@ -4,9 +4,13 @@ import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Shield, Building2 } from 'lucide-react';
 import Toast from '../components/Toast';
+<<<<<<< HEAD
 import { useToast } from '@/hooks/useToast';
 import EditRoleModal from '../components/EditRoleModal';
 import DeleteUserModal from '../components/DeleteUserModal';
+=======
+import { apiUrl } from '@/lib/api';
+>>>>>>> 1569cfc (update: backend API and integration of API routes, auditting next.js temp endpoints)
 
 const ROLE_META = {
 	super_admin: { Icon: ShieldCheck, label: 'Super Admin' },
@@ -49,7 +53,7 @@ export default function UsersTable({ users }) {
 		setLoadingId(userId);
 		setDeleteTarget(null);
 		try {
-			const res = await fetch(`/api/users/${userId}/delete`, { method: 'POST' });
+			const res = await fetch(apiUrl(`/api/users/${userId}/delete`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
 				addToast(`${email} has been deleted.`, 'success');
@@ -71,7 +75,7 @@ export default function UsersTable({ users }) {
 		setLoadingId(target.user_id);
 		setEditTarget(null);
 		try {
-			const res = await fetch(`/api/users/${target.user_id}/role`, {
+			const res = await fetch(apiUrl(`/api/users/${target.user_id}/role`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ role }),
@@ -95,7 +99,7 @@ export default function UsersTable({ users }) {
 		setInviteLoading(true);
 		setInviteLink(null);
 		try {
-			const res = await fetch('/api/users/invite', {
+			const res = await fetch(apiUrl('/api/users/invite'), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ role: inviteRole }),

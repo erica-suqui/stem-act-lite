@@ -7,8 +7,12 @@ import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
+<<<<<<< HEAD
 import { useToast } from '@/hooks/useToast';
 import { formatDate, formatCost } from '@/lib/utils';
+=======
+import { apiUrl } from '@/lib/api';
+>>>>>>> 1569cfc (update: backend API and integration of API routes, auditting next.js temp endpoints)
 
 const STATUS_META = {
 	pending:  { Icon: Clock,       label: 'Pending' },
@@ -67,7 +71,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setApproveTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/approve`, { method: 'POST' });
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/approve`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
 				updateEvent(eventId, { status: 'approved', admin_comment: null });
@@ -86,7 +90,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setDenyTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/deny`, {
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/deny`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ comment }),
@@ -109,7 +113,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setRevokeTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/revoke`, { method: 'POST' });
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/revoke`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
 				updateEvent(eventId, { status: 'pending', admin_comment: null });
