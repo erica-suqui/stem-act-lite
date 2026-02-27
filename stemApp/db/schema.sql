@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   user_id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   org_id    BIGINT NULL REFERENCES organizations(org_id) ON DELETE SET NULL,
   user_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
   email     TEXT NOT NULL UNIQUE,
   role      TEXT NOT NULL
            CHECK (role IN ('admin','partner'))
