@@ -173,7 +173,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 										</span>
 									</td>
 									<td className="actions-cell">
-										{org.status !== 'active' && (
+										{org.status === 'pending' && (
 											<button
 												className={`btn btn-approve${isLoading ? ' btn-loading' : ''}`}
 												onClick={() => updateStatus(org.org_id, org.org_name, 'active')}

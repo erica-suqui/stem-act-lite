@@ -102,7 +102,7 @@ export default async function PartnerDetailPage({ params }) {
 						<thead>
 							<tr>
 								<th scope="col">Event Title</th>
-								<th scope="col">Submitted By</th>
+								<th scope="col">Contact</th>
 								<th scope="col">Date</th>
 								<th scope="col">Location</th>
 								<th scope="col">Status</th>
@@ -132,7 +132,9 @@ export default async function PartnerDetailPage({ params }) {
 											)}
 										</td>
 										<td>
-											{event.contact_email}
+											{event.org_name}
+											<br />
+											<small>{event.contact_email}</small>
 										</td>
 										<td>
 											{formatDate(event.start_datetime)}
