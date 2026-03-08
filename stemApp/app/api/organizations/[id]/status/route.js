@@ -1,26 +1,18 @@
-import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-
-const VALID_STATUSES = ['active', 'pending', 'disabled'];
+import { parseIntParam, jsonError, jsonOk, parseBody } from '@/lib/apiHelpers';
+import { VALID_ORG_STATUSES } from '@/lib/constants';
 
 export async function POST(request, { params }) {
 	const { id } = await params;
-	const orgId = parseInt(id, 10);
+	const orgId = parseIntParam(id);
+	if (isNaN(orgId)) return jsonError('Invalid organization ID');
 
-	if (isNaN(orgId)) {
-		return NextResponse.json({ success: false, message: 'Invalid organization ID' }, { status: 400 });
-	}
-
-	let body;
-	try {
-		body = await request.json();
-	} catch {
-		return NextResponse.json({ success: false, message: 'Invalid request body' }, { status: 400 });
-	}
+	const { body, error } = await parseBody(request);
+	if (error) return error;
 
 	const { status } = body;
-	if (!VALID_STATUSES.includes(status)) {
-		return NextResponse.json({ success: false, message: `Status must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
+	if (!VALID_ORG_STATUSES.includes(status)) {
+		return jsonError(`Status must be one of: ${VALID_ORG_STATUSES.join(', ')}`);
 	}
 
 	try {
@@ -29,12 +21,10 @@ export async function POST(request, { params }) {
 			[status, orgId]
 		);
 
-		if (result.rowCount === 0) {
-			return NextResponse.json({ success: false, message: 'Organization not found' }, { status: 404 });
-		}
+		if (result.rowCount === 0) return jsonError('Organization not found', 404);
 
-		return NextResponse.json({ success: true, organization: result.rows[0] });
+		return jsonOk({ organization: result.rows[0] });
 	} catch (err) {
-		return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+		return jsonError(err.message, 500);
 	}
 }

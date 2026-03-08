@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Shield, Building2 } from 'lucide-react';
 import Toast from '../components/Toast';
+import { useToast } from '@/hooks/useToast';
+import EditRoleModal from '../components/EditRoleModal';
+import DeleteUserModal from '../components/DeleteUserModal';
 
 const ROLE_META = {
 	super_admin: { Icon: ShieldCheck, label: 'Super Admin' },
@@ -26,28 +29,13 @@ export default function UsersTable({ users }) {
 	const [deleteTarget, setDeleteTarget] = useState(null);
 	const [editTarget, setEditTarget] = useState(null);
 	const [editRole, setEditRole] = useState('');
-	const [toasts, setToasts] = useState([]);
 	const [inviteRole, setInviteRole] = useState('admin');
 	const [inviteLink, setInviteLink] = useState(null);
 	const [inviteLoading, setInviteLoading] = useState(false);
-	const deleteConfirmRef = useRef(null);
-	const editConfirmRef = useRef(null);
+	const { toasts, addToast, dismissToast } = useToast();
 
 	// Derived: who currently holds super_admin (if anyone)
 	const superAdminUser = users.find(u => u.role === 'super_admin') ?? null;
-
-	function addToast(message, type = 'success') {
-		const id = Date.now();
-		setToasts(prev => [...prev, { id, message, type }]);
-		if (type === 'success') {
-			setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-		}
-		// Errors persist until manually dismissed
-	}
-
-	function dismissToast(id) {
-		setToasts(prev => prev.filter(t => t.id !== id));
-	}
 
 	const filtered = users.filter(u => {
 		const q = search.toLowerCase();
@@ -129,20 +117,6 @@ export default function UsersTable({ users }) {
 		await navigator.clipboard.writeText(inviteLink);
 		addToast('Invite link copied to clipboard.', 'success');
 	}
-
-	// Focus confirm button when delete modal opens
-	useEffect(() => {
-		if (deleteTarget && deleteConfirmRef.current) {
-			deleteConfirmRef.current.focus();
-		}
-	}, [deleteTarget]);
-
-	// Focus role select when edit modal opens
-	useEffect(() => {
-		if (editTarget && editConfirmRef.current) {
-			editConfirmRef.current.focus();
-		}
-	}, [editTarget]);
 
 	// For the edit modal: is super_admin taken by someone else?
 	const superAdminTakenBy = editTarget && superAdminUser && superAdminUser.user_id !== editTarget.user_id
@@ -310,105 +284,22 @@ export default function UsersTable({ users }) {
 				</table>
 			</div>
 
-			{/* Edit Role Modal */}
 			{editTarget && (
-				<div className="modal-overlay" onClick={() => setEditTarget(null)}>
-					<div
-						className="modal-content"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="edit-role-heading"
-						onClick={e => e.stopPropagation()}
-						onKeyDown={e => e.key === 'Escape' && setEditTarget(null)}
-					>
-						<button
-							className="modal-close"
-							onClick={() => setEditTarget(null)}
-							aria-label="Close dialog"
-						>
-							&times;
-						</button>
-						<h3 id="edit-role-heading">Edit Role</h3>
-						<p style={{ marginBottom: '1rem' }}>
-							Updating role for <strong>{editTarget.email}</strong>.
-						</p>
-						<label htmlFor="edit-role-select">Role:</label>
-						<select
-							id="edit-role-select"
-							ref={editConfirmRef}
-							className="role-select"
-							value={editRole}
-							onChange={e => setEditRole(e.target.value)}
-						>
-							<option value="super_admin" disabled={!!superAdminTakenBy}>
-								Super Admin{superAdminTakenBy ? ` — taken by ${superAdminTakenBy.email}` : ''}
-							</option>
-							<option value="admin">Admin</option>
-							<option value="partner">Partner</option>
-						</select>
-						<div className="modal-actions">
-							<button
-								type="button"
-								className="btn btn-cancel"
-								onClick={() => setEditTarget(null)}
-							>
-								Cancel
-							</button>
-							<button
-								type="button"
-								className="btn btn-approve"
-								onClick={handleEditRole}
-								disabled={editRole === editTarget.role}
-							>
-								Save Role
-							</button>
-						</div>
-					</div>
-				</div>
+				<EditRoleModal
+					user={editTarget}
+					currentRole={editRole}
+					superAdminTakenBy={superAdminTakenBy}
+					onRoleChange={setEditRole}
+					onSave={handleEditRole}
+					onClose={() => setEditTarget(null)}
+				/>
 			)}
-
-			{/* Delete Confirmation Modal */}
 			{deleteTarget && (
-				<div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-					<div
-						className="modal-content"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="delete-modal-heading"
-						onClick={e => e.stopPropagation()}
-						onKeyDown={e => e.key === 'Escape' && setDeleteTarget(null)}
-					>
-						<button
-							className="modal-close"
-							onClick={() => setDeleteTarget(null)}
-							aria-label="Close dialog"
-						>
-							&times;
-						</button>
-						<h3 id="delete-modal-heading">Delete User</h3>
-						<p>
-							Are you sure you want to permanently delete{' '}
-							<strong>{deleteTarget.email}</strong>? This cannot be undone.
-						</p>
-						<div className="modal-actions" style={{ marginTop: '1.5rem' }}>
-							<button
-								type="button"
-								className="btn btn-cancel"
-								onClick={() => setDeleteTarget(null)}
-							>
-								Cancel
-							</button>
-							<button
-								ref={deleteConfirmRef}
-								type="button"
-								className="btn btn-deny"
-								onClick={() => handleDelete(deleteTarget.user_id, deleteTarget.email)}
-							>
-								Delete Permanently
-							</button>
-						</div>
-					</div>
-				</div>
+				<DeleteUserModal
+					user={deleteTarget}
+					onDelete={() => handleDelete(deleteTarget.user_id, deleteTarget.email)}
+					onClose={() => setDeleteTarget(null)}
+				/>
 			)}
 
 			<Toast toasts={toasts} onDismiss={dismissToast} />

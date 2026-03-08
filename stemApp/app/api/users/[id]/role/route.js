@@ -1,28 +1,17 @@
-import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-
-const VALID_ROLES = ['super_admin', 'admin', 'partner'];
+import { parseIntParam, jsonError, jsonOk, parseBody } from '@/lib/apiHelpers';
+import { VALID_ROLES } from '@/lib/constants';
 
 export async function POST(request, { params }) {
 	const { id } = await params;
-	const userId = parseInt(id, 10);
+	const userId = parseIntParam(id);
+	if (isNaN(userId)) return jsonError('Invalid user ID');
 
-	if (isNaN(userId)) {
-		return NextResponse.json({ success: false, message: 'Invalid user ID' }, { status: 400 });
-	}
-
-	let body;
-	try {
-		body = await request.json();
-	} catch {
-		return NextResponse.json({ success: false, message: 'Invalid request body' }, { status: 400 });
-	}
+	const { body, error } = await parseBody(request);
+	if (error) return error;
 
 	const { role } = body;
-
-	if (!VALID_ROLES.includes(role)) {
-		return NextResponse.json({ success: false, message: 'Invalid role' }, { status: 400 });
-	}
+	if (!VALID_ROLES.includes(role)) return jsonError('Invalid role');
 
 	try {
 		// Enforce single super_admin rule
@@ -32,9 +21,9 @@ export async function POST(request, { params }) {
 				[userId]
 			);
 			if (existing.rowCount > 0) {
-				return NextResponse.json(
-					{ success: false, message: `${existing.rows[0].email} is already the super administrator. Remove their role first.` },
-					{ status: 409 }
+				return jsonError(
+					`${existing.rows[0].email} is already the super administrator. Remove their role first.`,
+					409
 				);
 			}
 		}
@@ -44,12 +33,10 @@ export async function POST(request, { params }) {
 			[role, userId]
 		);
 
-		if (result.rowCount === 0) {
-			return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
-		}
+		if (result.rowCount === 0) return jsonError('User not found', 404);
 
-		return NextResponse.json({ success: true });
+		return jsonOk();
 	} catch (err) {
-		return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+		return jsonError(err.message, 500);
 	}
 }

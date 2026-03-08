@@ -1,42 +1,30 @@
-import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { parseIntParam, jsonError, jsonOk } from '@/lib/apiHelpers';
 
-export async function POST(request, { params }) {
+export async function POST(_, { params }) {
 	const { id } = await params;
-	const userId = parseInt(id, 10);
-
-	if (isNaN(userId)) {
-		return NextResponse.json({ success: false, message: 'Invalid user ID' }, { status: 400 });
-	}
+	const userId = parseIntParam(id);
+	if (isNaN(userId)) return jsonError('Invalid user ID');
 
 	try {
-		// Prevent deleting the last super_admin
-		const superAdmins = await pool.query(
-			"SELECT COUNT(*) FROM users WHERE role = 'super_admin'"
-		);
-		const target = await pool.query(
-			'SELECT role FROM users WHERE user_id = $1',
-			[userId]
-		);
+		const [superAdmins, target] = await Promise.all([
+			pool.query("SELECT COUNT(*) FROM users WHERE role = 'super_admin'"),
+			pool.query('SELECT role FROM users WHERE user_id = $1', [userId]),
+		]);
 
-		if (target.rowCount === 0) {
-			return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
-		}
+		if (target.rowCount === 0) return jsonError('User not found', 404);
 
 		if (
 			target.rows[0].role === 'super_admin' &&
 			parseInt(superAdmins.rows[0].count, 10) <= 1
 		) {
-			return NextResponse.json(
-				{ success: false, message: 'Cannot delete the last super administrator.' },
-				{ status: 403 }
-			);
+			return jsonError('Cannot delete the last super administrator.', 403);
 		}
 
 		await pool.query('DELETE FROM users WHERE user_id = $1', [userId]);
 
-		return NextResponse.json({ success: true });
+		return jsonOk();
 	} catch (err) {
-		return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+		return jsonError(err.message, 500);
 	}
 }

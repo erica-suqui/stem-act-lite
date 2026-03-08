@@ -1,12 +1,10 @@
-import { NextResponse } from 'next/server';
+import { parseIntParam, jsonError, jsonOk } from '@/lib/apiHelpers';
 
 export async function POST(_, { params }) {
 	const { id } = await params;
-	const eventId = parseInt(id, 10);
+	const eventId = parseIntParam(id);
 
-	if (isNaN(eventId)) {
-		return NextResponse.json({ success: false, message: 'Invalid event ID' }, { status: 400 });
-	}
+	if (isNaN(eventId)) return jsonError('Invalid event ID');
 
-	return NextResponse.json({ success: true });
+	return jsonOk();
 }

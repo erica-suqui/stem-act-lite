@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { mockOrganizations, mockEvents } from '@/lib/mockData';
+import { formatDate } from '@/lib/utils';
 
 const STATUS_META = {
 	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
@@ -27,12 +28,6 @@ export default async function PartnerDetailPage({ params }) {
 	const pending  = events.filter(e => e.status === 'pending').length;
 	const approved = events.filter(e => e.status === 'approved').length;
 	const denied   = events.filter(e => e.status === 'denied').length;
-
-	function formatDate(dateStr) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-		});
-	}
 
 	return (
 		<main className="dashboard">
