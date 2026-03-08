@@ -14,8 +14,8 @@ const STATUS_META = {
 
 const STAT_CARDS = [
 	{ filterValue: 'all',      className: 'stat-total',    label: 'Total',    key: 'total' },
-	{ filterValue: 'active',   className: 'stat-approved', label: 'Active',   key: 'active' },
 	{ filterValue: 'pending',  className: 'stat-pending',  label: 'Pending',  key: 'pending' },
+	{ filterValue: 'active',   className: 'stat-approved', label: 'Active',   key: 'active' },
 	{ filterValue: 'disabled', className: 'stat-denied',   label: 'Disabled', key: 'disabled' },
 ];
 

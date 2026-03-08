@@ -16,9 +16,9 @@ const ROLE_META = {
 
 const ROLE_CARDS = [
 	{ filterValue: 'all',         className: 'stat-total',    label: 'Total Users',  key: 'total' },
-	{ filterValue: 'super_admin', className: 'stat-approved', label: 'Super Admins', key: 'superAdmins' },
-	{ filterValue: 'admin',       className: 'stat-pending',  label: 'Admins',       key: 'admins' },
-	{ filterValue: 'partner',     className: 'stat-denied',   label: 'Partners',     key: 'partners' },
+	{ filterValue: 'partner',     className: 'stat-pending',  label: 'Partners',     key: 'partners' },
+	{ filterValue: 'admin',       className: 'stat-approved', label: 'Admins',       key: 'admins' },
+	{ filterValue: 'super_admin', className: 'stat-denied',   label: 'Super Admins', key: 'superAdmins' },
 ];
 
 export default function UsersTable({ users }) {
