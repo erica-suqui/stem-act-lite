@@ -11,10 +11,10 @@ export const dynamic = 'force-dynamic';
 
 async function getEvents() {
 	const result = await pool.query(`
-		SELECT e.*, o.org_name
+		SELECT e.*, e.created_at AS submitted_at, o.org_name
 		FROM events e
 		LEFT JOIN organizations o ON e.org_id = o.org_id
-		ORDER BY e.submitted_at DESC
+		ORDER BY e.created_at DESC
 	`);
 	return result.rows;
 }
