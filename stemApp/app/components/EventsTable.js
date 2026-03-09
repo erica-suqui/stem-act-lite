@@ -7,12 +7,9 @@ import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
-<<<<<<< HEAD
 import { useToast } from '@/hooks/useToast';
 import { formatDate, formatCost } from '@/lib/utils';
-=======
 import { apiUrl } from '@/lib/api';
->>>>>>> 1569cfc (update: backend API and integration of API routes, auditting next.js temp endpoints)
 
 const STATUS_META = {
 	pending:  { Icon: Clock,       label: 'Pending' },

@@ -4,13 +4,10 @@ import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Shield, Building2 } from 'lucide-react';
 import Toast from '../components/Toast';
-<<<<<<< HEAD
 import { useToast } from '@/hooks/useToast';
 import EditRoleModal from '../components/EditRoleModal';
 import DeleteUserModal from '../components/DeleteUserModal';
-=======
 import { apiUrl } from '@/lib/api';
->>>>>>> 1569cfc (update: backend API and integration of API routes, auditting next.js temp endpoints)
 
 const ROLE_META = {
 	super_admin: { Icon: ShieldCheck, label: 'Super Admin' },

@@ -70,7 +70,7 @@ export default function RegisterForm(){
             if (data.success) {
                 setShowModal(true);
                 setTimeout(() => {
-                    navigate.push("/");
+                    navigate.push("/login");
                 }, 2000);
             } else {
                 alert("Error: " + data.error);
