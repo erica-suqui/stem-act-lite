@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 import secrets
 from enum import Enum
+import bcrypt
 
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
@@ -90,6 +91,119 @@ class UpdateUserRoleRequest(BaseModel):
 
 class InviteUserRequest(BaseModel):
     role: InviteRole
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    orgName: str = Field(min_length=1)
+    email: str = Field(min_length=1)
+    phone: str = Field(min_length=1)
+    password: str = Field(min_length=8)
+
+
+@app.post("/api/login")
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    result = db.execute(
+        text(
+            """
+            SELECT email, password_hash, role, org_id, user_id
+            FROM users
+            WHERE lower(email) = lower(:email)
+            LIMIT 1
+            """
+        ),
+        {"email": payload.email.strip()},
+    )
+    user = result.mappings().first()
+
+    if user is None:
+        return JSONResponse(
+            {"success": False, "error": "Invalid email or password"},
+            status_code=401,
+        )
+
+    password_hash = user["password_hash"].encode("utf-8")
+    submitted_password = payload.password.encode("utf-8")
+    is_valid = bcrypt.checkpw(submitted_password, password_hash)
+    if not is_valid:
+        return JSONResponse(
+            {"success": False, "error": "Invalid email or password"},
+            status_code=401,
+        )
+
+    return {
+        "success": True,
+        "userID": user["user_id"],
+        "role": user["role"],
+        "orgId": user["org_id"],
+    }
+
+
+@app.post("/api/register")
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    org_name = payload.orgName.strip()
+    phone = payload.phone.strip()
+
+    existing = db.execute(
+        text("SELECT user_id FROM users WHERE lower(email) = lower(:email) LIMIT 1"),
+        {"email": email},
+    ).first()
+    if existing is not None:
+        return JSONResponse(
+            {"success": False, "error": "An account with this email already exists"},
+            status_code=409,
+        )
+
+    try:
+        password_hash = bcrypt.hashpw(
+            payload.password.encode("utf-8"),
+            bcrypt.gensalt(),
+        ).decode("utf-8")
+        user_name = email.split("@")[0] if "@" in email else email
+
+        org_result = db.execute(
+            text(
+                """
+                INSERT INTO organizations (org_name, contact_email, contact_phone, status)
+                VALUES (:org_name, :contact_email, :contact_phone, :status)
+                RETURNING org_id
+                """
+            ),
+            {
+                "org_name": org_name,
+                "contact_email": email,
+                "contact_phone": phone,
+                "status": OrganizationStatus.pending.value,
+            },
+        )
+        org_row = org_result.mappings().first()
+        org_id = org_row["org_id"]
+
+        db.execute(
+            text(
+                """
+                INSERT INTO users (email, password_hash, role, org_id, user_name)
+                VALUES (:email, :password_hash, :role, :org_id, :user_name)
+                """
+            ),
+            {
+                "email": email,
+                "password_hash": password_hash,
+                "role": UserRole.partner.value,
+                "org_id": org_id,
+                "user_name": user_name,
+            },
+        )
+        db.commit()
+        return {"success": True}
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
 
 
 @app.post("/api/events/{event_id}/approve")

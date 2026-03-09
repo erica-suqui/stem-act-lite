@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import * as z from 'zod';
+import { apiUrl } from '@/lib/api';
 
 
 export default function LogIn(){
@@ -44,7 +45,7 @@ export default function LogIn(){
         }
 
         try{
-            const response = await fetch('/api/login',{
+            const response = await fetch(apiUrl('/api/login'),{
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
