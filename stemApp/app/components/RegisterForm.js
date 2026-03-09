@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '@/lib/api';
 
 export default function RegisterForm(){
     //Form Data
@@ -57,7 +58,7 @@ export default function RegisterForm(){
         }
 
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch(apiUrl('/api/register'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
