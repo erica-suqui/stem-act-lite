@@ -1,6 +1,5 @@
 import pool from '@/lib/db';
 import EventsTable from '../components/EventsTable';
-import StatsCards from '../components/StatsCards';
 import OrganizationsTable from '../components/OrganizationsTable';
 
 export const dynamic = 'force-dynamic';
@@ -30,17 +29,9 @@ export default async function Dashboard() {
 	const events = await getEvents();
 	const organizations = await getOrganizations();
 
-	const stats = {
-		pending: events.filter(e => e.status === 'pending').length,
-		approved: events.filter(e => e.status === 'approved').length,
-		denied: events.filter(e => e.status === 'denied').length,
-		total: events.length,
-	};
-
 	return (
 		<main className="dashboard">
 			<h1 className="page-title">Event Submissions</h1>
-			<StatsCards stats={stats} />
 			<EventsTable
 				events={JSON.parse(JSON.stringify(events))}
 				organizations={JSON.parse(JSON.stringify(organizations))}
