@@ -16,6 +16,11 @@ export default function LogIn(){
     const [errors, setErrors] = useState({})
     const router = useRouter();
     const [loginError, setLoginError] = useState('');
+    const roleRoutes = {
+        partner: '/',
+        admin: '/superAdminDashboard',
+        super_admin: '/superAdminDashboard',
+    };
 
     const LogInSchema = z.object({
         email: z.string().email().min(1,"Missing Email"),
@@ -59,22 +64,11 @@ export default function LogIn(){
                 localStorage.setItem('userID', data.userID);
                 localStorage.setItem('role', data.role);
                 localStorage.setItem('orgId', data.orgId);
-                
-                if (data.role === 'partner'){
-                    router.push('/trustedPartnerDashboard');
-                }
-                else if(data.role === 'admin'){
-                    router.push('/adminDashboard');
-                }
-                else if (data.role == 'super_admin'){
-                    router.push('/superAdminDashboard');
-                }
-                else{
-                    setLoginError(data.error);
-                }
+                const targetRoute = roleRoutes[data.role] || '/';
+                router.push(targetRoute);
             }
             else{
-                setLoginError(data.error);
+                setLoginError(data.error || 'Login failed');
             }
         }
         catch(error){
