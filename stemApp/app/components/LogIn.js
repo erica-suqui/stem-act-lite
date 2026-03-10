@@ -16,12 +16,6 @@ export default function LogIn(){
     const [errors, setErrors] = useState({})
     const router = useRouter();
     const [loginError, setLoginError] = useState('');
-    const roleRoutes = {
-        partner: '/',
-        admin: '/superAdminDashboard',
-        super_admin: '/superAdminDashboard',
-    };
-
     const LogInSchema = z.object({
         email: z.string().email().min(1,"Missing Email"),
         password: z.string().min(1,"Missing Password")
@@ -64,6 +58,11 @@ export default function LogIn(){
                 localStorage.setItem('userID', data.userID);
                 localStorage.setItem('role', data.role);
                 localStorage.setItem('orgId', data.orgId);
+                const roleRoutes = {
+                    partner: data.orgId ? `/partners/${data.orgId}` : '/partners',
+                    admin: '/superAdminDashboard',
+                    super_admin: '/superAdminDashboard',
+                };
                 const targetRoute = roleRoutes[data.role] || '/';
                 router.push(targetRoute);
             }
