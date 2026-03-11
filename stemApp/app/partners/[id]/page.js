@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
-import { formatDate, formatTimeRange } from '@/lib/utils';
+import { formatDate, formatFullName, formatTimeRange } from '@/lib/utils';
 import pool from '@/lib/db';
 
 const STATUS_META = {
@@ -18,7 +18,8 @@ async function getOrganization(orgId) {
 		SELECT
 			org_id,
 			org_name,
-			contact_name,
+			contact_first_name,
+			contact_last_name,
 			contact_email,
 			contact_phone,
 			CASE
@@ -32,7 +33,15 @@ async function getOrganization(orgId) {
 		`,
 		[orgId],
 	);
-	return result.rows[0] || null;
+	if (!result.rows[0]) return null;
+
+	return {
+		...result.rows[0],
+		contact_name: formatFullName(
+			result.rows[0].contact_first_name,
+			result.rows[0].contact_last_name,
+		),
+	};
 }
 
 async function getOrganizationEvents(orgId) {
@@ -50,9 +59,13 @@ async function getOrganizationEvents(orgId) {
 			status,
 			hyperlink AS event_link,
 			event_contact AS contact_email,
+			COALESCE(array_remove(array_agg(DISTINCT t.name), NULL), '{}') AS tag_names,
 			created_at AS submitted_at
-		FROM events
+		FROM events e
+		LEFT JOIN event_tags et ON et.event_id = e.event_id
+		LEFT JOIN tags t ON t.tag_id = et.tag_id
 		WHERE org_id = $1
+		GROUP BY e.event_id
 		ORDER BY created_at DESC
 		`,
 		[orgId],
@@ -86,7 +99,7 @@ export default async function PartnerDetailPage({ params }) {
 			<div className="org-detail-card">
 				<dl className="org-detail-grid">
 					<dt>Contact Name</dt>
-					<dd>{org.contact_name || '—'}</dd>
+					<dd>{org.contact_name}</dd>
 
 					<dt>Email</dt>
 					<dd>
@@ -172,9 +185,13 @@ export default async function PartnerDetailPage({ params }) {
 											)}
 										</td>
 										<td>
-											{event.org_name}
-											<br />
 											<small>{event.contact_email}</small>
+											{event.tag_names.length > 0 && (
+												<>
+													<br />
+													<small>{event.tag_names.join(', ')}</small>
+												</>
+											)}
 										</td>
 										<td>
 											{formatDate(event.start_datetime)}

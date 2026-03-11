@@ -47,3 +47,7 @@ export function formatCost(cost) {
 	const num = parseFloat(cost);
 	return num === 0 ? 'Free' : `$${num.toFixed(2)}`;
 }
+
+export function formatFullName(firstName, lastName) {
+	return [firstName, lastName].filter(Boolean).join(' ').trim() || '—';
+}

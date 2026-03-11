@@ -12,7 +12,8 @@ async function getOrganizations() {
 		SELECT
 			o.org_id,
 			o.org_name,
-			o.contact_name,
+			o.contact_first_name,
+			o.contact_last_name,
 			o.contact_email,
 			o.contact_phone,
 			CASE
@@ -32,6 +33,7 @@ async function getOrganizations() {
 
 	return result.rows.map(org => ({
 		...org,
+		contact_name: [org.contact_first_name, org.contact_last_name].filter(Boolean).join(' ').trim(),
 		event_count: Number(org.event_count || 0),
 		pending_count: Number(org.pending_count || 0),
 		approved_count: Number(org.approved_count || 0),
