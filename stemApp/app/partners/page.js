@@ -45,6 +45,7 @@ export default async function PartnersPage() {
 	return (
 		<main className="dashboard">
 			<h1 className="page-title">Partner Organizations</h1>
+
 			<PartnersTable organizations={organizations} />
 		</main>
 	);
