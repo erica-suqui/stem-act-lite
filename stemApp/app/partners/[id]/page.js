@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTimeRange } from '@/lib/utils';
 import pool from '@/lib/db';
 
 const STATUS_META = {
@@ -143,6 +143,7 @@ export default async function PartnerDetailPage({ params }) {
 								<th scope="col">Event Title</th>
 								<th scope="col">Contact</th>
 								<th scope="col">Date</th>
+								<th scope="col">Time</th>
 								<th scope="col">Location</th>
 								<th scope="col">Status</th>
 								<th scope="col">Submitted</th>
@@ -177,13 +178,14 @@ export default async function PartnerDetailPage({ params }) {
 										</td>
 										<td>
 											{formatDate(event.start_datetime)}
-											{event.end_datetime && (
+											{event.end_datetime && formatDate(event.end_datetime) !== formatDate(event.start_datetime) && (
 												<>
 													<br />
 													<small>to {formatDate(event.end_datetime)}</small>
 												</>
 											)}
 										</td>
+										<td>{formatTimeRange(event.start_datetime, event.end_datetime)}</td>
 										<td>
 											{event.city}, {event.county}
 											<br />

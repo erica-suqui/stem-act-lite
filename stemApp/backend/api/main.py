@@ -150,7 +150,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             {"success": False, "error": "This partner account is not active yet"},
             status_code=403,
         )
-
     return {
         "success": True,
         "userID": user["user_id"],

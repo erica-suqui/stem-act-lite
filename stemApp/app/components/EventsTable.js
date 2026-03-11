@@ -8,7 +8,7 @@ import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
 import { useToast } from '@/hooks/useToast';
-import { formatDate, formatCost } from '@/lib/utils';
+import { formatDate, formatCost, formatTimeRange } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 
 const STATUS_META = {
@@ -218,6 +218,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 							<th scope="col">Event Title</th>
 							<th scope="col">{activeTab === 'partner' ? 'Organization' : 'Submitted By'}</th>
 							<th scope="col">Date</th>
+							<th scope="col">Time</th>
 							<th scope="col">Location</th>
 							<th scope="col">Audience</th>
 							<th scope="col">Cost</th>
@@ -260,13 +261,14 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 										</td>
 										<td>
 											{formatDate(event.start_datetime)}
-											{event.end_datetime && (
+											{event.end_datetime && formatDate(event.end_datetime) !== formatDate(event.start_datetime) && (
 												<>
 													<br />
 													<small>to {formatDate(event.end_datetime)}</small>
 												</>
 											)}
 										</td>
+										<td>{formatTimeRange(event.start_datetime, event.end_datetime)}</td>
 										<td>
 											{event.city}, {event.county}
 											<br />
@@ -339,7 +341,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 									</tr>
 									{expandedId === event.event_id && (
 										<tr className="details-row" id={`details-${event.event_id}`}>
-											<td colSpan={9}>
+											<td colSpan={10}>
 												<div className="event-details">
 													<h4>Description</h4>
 													<p>{event.description}</p>
@@ -358,7 +360,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 						})}
 						{filtered.length === 0 && (
 							<tr>
-								<td colSpan={9} className="no-data">
+								<td colSpan={10} className="no-data">
 									No {activeTab === 'partner' ? 'partner' : 'viewer'} events match the selected filters.
 								</td>
 							</tr>

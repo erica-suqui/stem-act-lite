@@ -12,7 +12,6 @@ export default function NavLinks() {
 		setIsMounted(true);
 		setRole(localStorage.getItem('role'));
 	}, [pathname]);
-
 	const handleLogout = () => {
 		localStorage.clear();
 		window.location.href = '/';
