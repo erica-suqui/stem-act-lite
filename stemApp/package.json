@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "user:create-super-admin": "node --env-file=.env.local scripts/create-super-admin.mjs",
+    "db:seed-demo-events": "node --env-file=.env.local scripts/seed-demo-events.mjs",
     "db:init": "node db/init.js",
     "db:seed": "node db/seed.js"
   },

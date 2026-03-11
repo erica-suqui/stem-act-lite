@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 import pool from '@/lib/db';
 
 const STATUS_META = {
@@ -79,20 +79,8 @@ export default async function PartnerDetailPage({ params }) {
 	const approved = events.filter(e => e.status === 'approved').length;
 	const denied   = events.filter(e => e.status === 'denied').length;
 
-	function formatDate(dateStr) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-		});
-	}
-
 	return (
 		<main className="dashboard">
-			<nav aria-label="Breadcrumb" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
-				<Link href="/partners" style={{ color: '#0b6b8a', textDecoration: 'none' }}>
-					← Partner Organizations
-				</Link>
-			</nav>
-
 			<h1 className="page-title">{org.org_name}</h1>
 
 			<div className="org-detail-card">

@@ -7,6 +7,8 @@ import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
+import { useToast } from '@/hooks/useToast';
+import { formatDate, formatCost } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 
 const STATUS_META = {
@@ -26,7 +28,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 	const [approveTarget, setApproveTarget] = useState(null);
 	const [revokeTarget, setRevokeTarget]   = useState(null);
 	const [loadingId, setLoadingId]     = useState(null);
-	const [toasts, setToasts]           = useState([]);
+	const { toasts, addToast, dismissToast } = useToast();
 
 	const partnerEvents = useMemo(() => events.filter(e => e.org_id != null), [events]);
 	const viewerEvents  = useMemo(() => events.filter(e => e.org_id == null), [events]);
@@ -56,18 +58,6 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setOrgFilter('all');
 		setSearch('');
 		setExpandedId(null);
-	}
-
-	function addToast(message, type = 'success') {
-		const id = Date.now();
-		setToasts(prev => [...prev, { id, message, type }]);
-		if (type === 'success') {
-			setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-		}
-	}
-
-	function dismissToast(id) {
-		setToasts(prev => prev.filter(t => t.id !== id));
 	}
 
 	function updateEvent(eventId, patch) {
@@ -134,17 +124,6 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 			setLoadingId(null);
 		}
 	}, []);
-
-	function formatDate(dateStr) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-		});
-	}
-
-	function formatCost(cost) {
-		const num = parseFloat(cost);
-		return num === 0 ? 'Free' : `$${num.toFixed(2)}`;
-	}
 
 	return (
 		<>

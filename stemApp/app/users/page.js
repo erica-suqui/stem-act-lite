@@ -27,7 +27,6 @@ export default async function UsersPage() {
 	return (
 		<main className="dashboard">
 			<h1 className="page-title">User Management</h1>
-
 			<UsersTable users={users} />
 		</main>
 	);

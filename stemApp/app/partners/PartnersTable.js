@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import Toast from '../components/Toast';
+import { useToast } from '@/hooks/useToast';
 import { apiUrl } from '@/lib/api';
 
 const STATUS_META = {
@@ -14,8 +15,8 @@ const STATUS_META = {
 
 const STAT_CARDS = [
 	{ filterValue: 'all',      className: 'stat-total',    label: 'Total',    key: 'total' },
-	{ filterValue: 'active',   className: 'stat-approved', label: 'Active',   key: 'active' },
 	{ filterValue: 'pending',  className: 'stat-pending',  label: 'Pending',  key: 'pending' },
+	{ filterValue: 'active',   className: 'stat-approved', label: 'Active',   key: 'active' },
 	{ filterValue: 'disabled', className: 'stat-denied',   label: 'Disabled', key: 'disabled' },
 ];
 
@@ -24,7 +25,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 	const [search, setSearch] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [loadingId, setLoadingId] = useState(null);
-	const [toasts, setToasts] = useState([]);
+	const { toasts, addToast, dismissToast } = useToast();
 
 	const stats = {
 		total:    organizations.length,
@@ -32,19 +33,6 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 		pending:  organizations.filter(o => o.status === 'pending').length,
 		disabled: organizations.filter(o => o.status === 'disabled').length,
 	};
-
-	function addToast(message, type = 'success') {
-		const id = Date.now();
-		setToasts(prev => [...prev, { id, message, type }]);
-		if (type === 'success') {
-			setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-		}
-		// Errors persist until manually dismissed
-	}
-
-	function dismissToast(id) {
-		setToasts(prev => prev.filter(t => t.id !== id));
-	}
 
 	const filtered = organizations.filter(org => {
 		const q = search.toLowerCase();

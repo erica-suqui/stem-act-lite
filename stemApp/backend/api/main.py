@@ -110,9 +110,16 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     result = db.execute(
         text(
             """
-            SELECT email, password_hash, role, org_id, user_id
-            FROM users
-            WHERE lower(email) = lower(:email)
+            SELECT
+                u.email,
+                u.password_hash,
+                u.role,
+                u.org_id,
+                u.user_id,
+                o.status AS organization_status
+            FROM users u
+            LEFT JOIN organizations o ON o.org_id = u.org_id
+            WHERE lower(u.email) = lower(:email)
             LIMIT 1
             """
         ),
@@ -135,6 +142,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             status_code=401,
         )
 
+    if (
+        user["role"] == UserRole.partner.value
+        and user["organization_status"] in {"pending", "disabled", "inactive", "rejected"}
+    ):
+        return JSONResponse(
+            {"success": False, "error": "This partner account is not active yet"},
+            status_code=403,
+        )
     return {
         "success": True,
         "userID": user["user_id"],
