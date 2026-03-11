@@ -1,6 +1,5 @@
 import pool from '@/lib/db';
 import EventsTable from '../components/EventsTable';
-import OrganizationsTable from '../components/OrganizationsTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +35,6 @@ export default async function Dashboard() {
 				events={JSON.parse(JSON.stringify(events))}
 				organizations={JSON.parse(JSON.stringify(organizations))}
 			/>
-
-			<h2>Partner Organizations</h2>
-			<OrganizationsTable organizations={JSON.parse(JSON.stringify(organizations))} />
 		</main>
 	);
 }
