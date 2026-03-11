@@ -1,5 +1,3 @@
-'use client';
-
 export default function OrganizationsTable({ organizations }) {
 	return (
 		<div className="table-wrapper">

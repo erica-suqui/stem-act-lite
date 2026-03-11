@@ -22,8 +22,9 @@ const ROLE_CARDS = [
 	{ filterValue: 'super_admin', className: 'stat-denied',   label: 'Super Admins', key: 'superAdmins' },
 ];
 
-export default function UsersTable({ users }) {
+export default function UsersTable({ users: initialUsers }) {
 	const router = useRouter();
+	const [users, setUsers] = useState(initialUsers);
 	const [search, setSearch] = useState('');
 	const [roleFilter, setRoleFilter] = useState('all');
 	const [loadingId, setLoadingId] = useState(null);
@@ -53,8 +54,8 @@ export default function UsersTable({ users }) {
 			const res = await fetch(apiUrl(`/api/users/${userId}/delete`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
+				setUsers(prev => prev.filter(u => u.user_id !== userId));
 				addToast(`${email} has been deleted.`, 'success');
-				router.refresh();
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -63,7 +64,7 @@ export default function UsersTable({ users }) {
 		} finally {
 			setLoadingId(null);
 		}
-	}, [router]);
+	}, []);
 
 	const handleEditRole = useCallback(async () => {
 		if (!editTarget || !editRole) return;
@@ -79,8 +80,8 @@ export default function UsersTable({ users }) {
 			});
 			const data = await res.json();
 			if (data.success) {
+				setUsers(prev => prev.map(u => u.user_id === target.user_id ? { ...u, role } : u));
 				addToast(`${target.email}'s role updated to ${ROLE_META[role]?.label ?? role}.`, 'success');
-				router.refresh();
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -89,7 +90,7 @@ export default function UsersTable({ users }) {
 		} finally {
 			setLoadingId(null);
 		}
-	}, [editTarget, editRole, router]);
+	}, [editTarget, editRole]);
 
 	async function handleGenerateInvite(e) {
 		e.preventDefault();
@@ -159,7 +160,7 @@ export default function UsersTable({ users }) {
 					<select
 						id="invite-role"
 						value={inviteRole}
-						onChange={e => setInviteRole(e.target.value)}
+						onChange={e => { setInviteRole(e.target.value); setInviteLink(null); }}
 					>
 						<option value="admin">Admin</option>
 						<option value="super_admin">Super Admin</option>

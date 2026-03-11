@@ -95,7 +95,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 			const data = await res.json();
 			if (data.success) {
 				updateEvent(eventId, { status: 'denied', admin_comment: comment });
-				addToast(`"${title}" has been denied.`, 'success');
+				addToast(`"${title}" has been denied.`, 'error');
 			} else {
 				addToast('Error: ' + data.message, 'error');
 			}
@@ -169,6 +169,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 					value={search}
 					onChange={e => setSearch(e.target.value)}
 					placeholder="Filter by title…"
+				className="search-input"
 					aria-label="Search events by title"
 				/>
 
