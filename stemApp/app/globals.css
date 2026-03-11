@@ -58,7 +58,18 @@ body {
 	font-size: 0.9rem;
 }
 
-.nav-links a:hover {
+.nav-links button {
+	color: #ccd6f6;
+	background: transparent;
+	border: 0;
+	padding: 0;
+	font-size: 0.9rem;
+	font: inherit;
+	cursor: pointer;
+}
+
+.nav-links a:hover,
+.nav-links button:hover {
 	color: #64ffda;
 }
 

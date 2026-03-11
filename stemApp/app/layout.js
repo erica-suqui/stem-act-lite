@@ -1,5 +1,6 @@
 import './globals.css';
 import NavLinks from './components/NavLinks';
+import RouteGuard from './components/RouteGuard';
 
 export const metadata = {
 	title: 'STEM-ACT Admin Dashboard',
@@ -18,7 +19,7 @@ export default function RootLayout({ children }) {
 					</div>
 					<NavLinks />
 				</nav>
-				{children}
+				<RouteGuard>{children}</RouteGuard>
 			</body>
 		</html>
 	);
