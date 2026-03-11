@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -82,12 +81,6 @@ export default async function PartnerDetailPage({ params }) {
 
 	return (
 		<main className="dashboard">
-			<nav aria-label="Breadcrumb" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
-				<Link href="/partners" style={{ color: '#0b6b8a', textDecoration: 'none' }}>
-					← Partner Organizations
-				</Link>
-			</nav>
-
 			<h1 className="page-title">{org.org_name}</h1>
 
 			<div className="org-detail-card">
