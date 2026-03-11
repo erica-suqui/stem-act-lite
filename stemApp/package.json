@@ -6,18 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "user:create-super-admin": "node --env-file=.env.local scripts/create-super-admin.mjs",
+    "db:seed-demo-events": "node --env-file=.env.local scripts/seed-demo-events.mjs",
     "db:init": "node db/init.js",
     "db:seed": "node db/seed.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.3.1",
     "lucide-react": "^0.574.0",
     "next": "^16.1.6",
     "pg": "^8.13.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-hot-toast": "^2.6.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "dotenv": "^17.3.1"
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "next": "^16.1.6",
+    "pg": "^8.13.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   }
 }

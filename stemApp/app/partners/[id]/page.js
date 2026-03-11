@@ -1,17 +1,68 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
-import { mockOrganizations, mockEvents } from '@/lib/mockData';
+import { formatDate } from '@/lib/utils';
+import pool from '@/lib/db';
 
 const STATUS_META = {
 	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
 	approved: { Icon: CheckCircle,  label: 'Approved', className: 'status-approved' },
 	denied:   { Icon: XCircle,      label: 'Denied',   className: 'status-denied' },
+	rejected: { Icon: XCircle,      label: 'Rejected', className: 'status-denied' },
 };
+
+export const dynamic = 'force-dynamic';
+
+async function getOrganization(orgId) {
+	const result = await pool.query(
+		`
+		SELECT
+			org_id,
+			org_name,
+			contact_name,
+			contact_email,
+			contact_phone,
+			CASE
+				WHEN status = 'approved' THEN 'active'
+				WHEN status IN ('rejected', 'inactive') THEN 'disabled'
+				ELSE status
+			END AS status
+		FROM organizations
+		WHERE org_id = $1
+		LIMIT 1
+		`,
+		[orgId],
+	);
+	return result.rows[0] || null;
+}
+
+async function getOrganizationEvents(orgId) {
+	const result = await pool.query(
+		`
+		SELECT
+			event_id,
+			org_id,
+			title,
+			start_datetime,
+			end_datetime,
+			address,
+			city,
+			county,
+			status,
+			hyperlink AS event_link,
+			event_contact AS contact_email,
+			created_at AS submitted_at
+		FROM events
+		WHERE org_id = $1
+		ORDER BY created_at DESC
+		`,
+		[orgId],
+	);
+	return result.rows;
+}
 
 export async function generateMetadata({ params }) {
 	const { id } = await params;
-	const org = mockOrganizations.find(o => o.org_id === Number(id));
+	const org = await getOrganization(Number(id));
 	return {
 		title: org ? `${org.org_name} — STEM-ACT Admin` : 'Partner Not Found',
 	};
@@ -19,29 +70,17 @@ export async function generateMetadata({ params }) {
 
 export default async function PartnerDetailPage({ params }) {
 	const { id } = await params;
-	const org = mockOrganizations.find(o => o.org_id === Number(id));
+	const org = await getOrganization(Number(id));
 	if (!org) notFound();
 
-	const events = mockEvents.filter(e => e.org_id === org.org_id);
+	const events = await getOrganizationEvents(org.org_id);
 
 	const pending  = events.filter(e => e.status === 'pending').length;
 	const approved = events.filter(e => e.status === 'approved').length;
 	const denied   = events.filter(e => e.status === 'denied').length;
 
-	function formatDate(dateStr) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-		});
-	}
-
 	return (
 		<main className="dashboard">
-			<nav aria-label="Breadcrumb" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
-				<Link href="/partners" style={{ color: '#0b6b8a', textDecoration: 'none' }}>
-					← Partner Organizations
-				</Link>
-			</nav>
-
 			<h1 className="page-title">{org.org_name}</h1>
 
 			<div className="org-detail-card">

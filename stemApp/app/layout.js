@@ -1,5 +1,6 @@
 import './globals.css';
 import NavLinks from './components/NavLinks';
+import RouteGuard from './components/RouteGuard';
 
 export const metadata = {
 	title: 'STEM-ACT Admin Dashboard',
@@ -14,11 +15,11 @@ export default function RootLayout({ children }) {
 					<div className="nav-brand">
 						{/* Not an h1 — page h1 lives inside each page's <main> (WCAG 1.3.1) */}
 						<span className="nav-brand-name">STEM-ACT</span>
-						<span className="nav-subtitle">Admin Dashboard</span>
+					
 					</div>
 					<NavLinks />
 				</nav>
-				{children}
+				<RouteGuard>{children}</RouteGuard>
 			</body>
 		</html>
 	);

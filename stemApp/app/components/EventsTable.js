@@ -7,6 +7,9 @@ import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
+import { useToast } from '@/hooks/useToast';
+import { formatDate, formatCost } from '@/lib/utils';
+import { apiUrl } from '@/lib/api';
 
 const STATUS_META = {
 	pending:  { Icon: Clock,       label: 'Pending' },
@@ -25,7 +28,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 	const [approveTarget, setApproveTarget] = useState(null);
 	const [revokeTarget, setRevokeTarget]   = useState(null);
 	const [loadingId, setLoadingId]     = useState(null);
-	const [toasts, setToasts]           = useState([]);
+	const { toasts, addToast, dismissToast } = useToast();
 
 	const partnerEvents = useMemo(() => events.filter(e => e.org_id != null), [events]);
 	const viewerEvents  = useMemo(() => events.filter(e => e.org_id == null), [events]);
@@ -57,18 +60,6 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setExpandedId(null);
 	}
 
-	function addToast(message, type = 'success') {
-		const id = Date.now();
-		setToasts(prev => [...prev, { id, message, type }]);
-		if (type === 'success') {
-			setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-		}
-	}
-
-	function dismissToast(id) {
-		setToasts(prev => prev.filter(t => t.id !== id));
-	}
-
 	function updateEvent(eventId, patch) {
 		setEvents(prev => prev.map(e => e.event_id === eventId ? { ...e, ...patch } : e));
 	}
@@ -77,7 +68,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setApproveTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/approve`, { method: 'POST' });
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/approve`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
 				updateEvent(eventId, { status: 'approved', admin_comment: null });
@@ -96,7 +87,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setDenyTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/deny`, {
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/deny`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ comment }),
@@ -119,7 +110,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 		setLoadingId(eventId);
 		setRevokeTarget(null);
 		try {
-			const res  = await fetch(`/api/events/${eventId}/revoke`, { method: 'POST' });
+			const res  = await fetch(apiUrl(`/api/events/${eventId}/revoke`), { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
 				updateEvent(eventId, { status: 'pending', admin_comment: null });
@@ -133,17 +124,6 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 			setLoadingId(null);
 		}
 	}, []);
-
-	function formatDate(dateStr) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-		});
-	}
-
-	function formatCost(cost) {
-		const num = parseFloat(cost);
-		return num === 0 ? 'Free' : `$${num.toFixed(2)}`;
-	}
 
 	return (
 		<>

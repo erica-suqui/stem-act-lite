@@ -2,10 +2,10 @@
 
 export default function StatsCards({ stats, onFilter, activeFilter }) {
 	const cards = [
+		{ key: 'total',    filterValue: 'all',      className: 'stat-total',    label: 'Total' },
 		{ key: 'pending',  filterValue: 'pending',  className: 'stat-pending',  label: 'Pending' },
 		{ key: 'approved', filterValue: 'approved', className: 'stat-approved', label: 'Approved' },
 		{ key: 'denied',   filterValue: 'denied',   className: 'stat-denied',   label: 'Denied' },
-		{ key: 'total',    filterValue: 'all',       className: 'stat-total',    label: 'Total' },
 	];
 
 	return (
