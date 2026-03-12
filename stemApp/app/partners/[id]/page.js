@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { formatDate, formatFullName, formatTimeRange } from '@/lib/utils';
 import pool from '@/lib/db';
+import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
 
 const STATUS_META = {
 	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
@@ -13,24 +14,47 @@ const STATUS_META = {
 export const dynamic = 'force-dynamic';
 
 async function getOrganization(orgId) {
+	const splitNamesEnabled = await hasSplitContactNameColumns();
 	const result = await pool.query(
-		`
-		SELECT
-			org_id,
-			org_name,
-			contact_first_name,
-			contact_last_name,
-			contact_email,
-			contact_phone,
-			CASE
-				WHEN status = 'approved' THEN 'active'
-				WHEN status IN ('rejected', 'inactive') THEN 'disabled'
-				ELSE status
-			END AS status
-		FROM organizations
-		WHERE org_id = $1
-		LIMIT 1
-		`,
+		splitNamesEnabled
+			? `
+				SELECT
+					org_id,
+					org_name,
+					contact_first_name,
+					contact_last_name,
+					contact_email,
+					contact_phone,
+					CASE
+						WHEN status = 'approved' THEN 'active'
+						WHEN status IN ('rejected', 'inactive') THEN 'disabled'
+						ELSE status
+					END AS status
+				FROM organizations
+				WHERE org_id = $1
+				LIMIT 1
+			`
+			: `
+				SELECT
+					org_id,
+					org_name,
+					split_part(COALESCE(contact_name, ''), ' ', 1) AS contact_first_name,
+					CASE
+						WHEN position(' ' IN COALESCE(contact_name, '')) > 0
+							THEN NULLIF(substring(COALESCE(contact_name, '') FROM position(' ' IN COALESCE(contact_name, '')) + 1), '')
+						ELSE NULL
+					END AS contact_last_name,
+					contact_email,
+					contact_phone,
+					CASE
+						WHEN status = 'approved' THEN 'active'
+						WHEN status IN ('rejected', 'inactive') THEN 'disabled'
+						ELSE status
+					END AS status
+				FROM organizations
+				WHERE org_id = $1
+				LIMIT 1
+			`,
 		[orgId],
 	);
 	if (!result.rows[0]) return null;
@@ -45,29 +69,50 @@ async function getOrganization(orgId) {
 }
 
 async function getOrganizationEvents(orgId) {
+	const tagsEnabled = await hasEventTagTables();
 	const result = await pool.query(
-		`
-		SELECT
-			event_id,
-			org_id,
-			title,
-			start_datetime,
-			end_datetime,
-			address,
-			city,
-			county,
-			status,
-			hyperlink AS event_link,
-			event_contact AS contact_email,
-			COALESCE(array_remove(array_agg(DISTINCT t.name), NULL), '{}') AS tag_names,
-			created_at AS submitted_at
-		FROM events e
-		LEFT JOIN event_tags et ON et.event_id = e.event_id
-		LEFT JOIN tags t ON t.tag_id = et.tag_id
-		WHERE org_id = $1
-		GROUP BY e.event_id
-		ORDER BY created_at DESC
-		`,
+		tagsEnabled
+			? `
+				SELECT
+					e.event_id,
+					e.org_id,
+					e.title,
+					e.start_datetime,
+					e.end_datetime,
+					e.address,
+					e.city,
+					e.county,
+					e.status,
+					e.hyperlink AS event_link,
+					e.event_contact AS contact_email,
+					COALESCE(array_remove(array_agg(DISTINCT t.name), NULL), '{}') AS tag_names,
+					e.created_at AS submitted_at
+				FROM events e
+				LEFT JOIN event_tags et ON et.event_id = e.event_id
+				LEFT JOIN tags t ON t.tag_id = et.tag_id
+				WHERE e.org_id = $1
+				GROUP BY e.event_id
+				ORDER BY e.created_at DESC
+			`
+			: `
+				SELECT
+					e.event_id,
+					e.org_id,
+					e.title,
+					e.start_datetime,
+					e.end_datetime,
+					e.address,
+					e.city,
+					e.county,
+					e.status,
+					e.hyperlink AS event_link,
+					e.event_contact AS contact_email,
+					ARRAY[]::TEXT[] AS tag_names,
+					e.created_at AS submitted_at
+				FROM events e
+				WHERE e.org_id = $1
+				ORDER BY e.created_at DESC
+			`,
 		[orgId],
 	);
 	return result.rows;
