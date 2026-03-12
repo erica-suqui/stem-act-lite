@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS event_revisions (
 CREATE TABLE IF NOT EXISTS invitations (
   invitation_id  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   token          TEXT NOT NULL UNIQUE,
-  role           TEXT NOT NULL CHECK (role IN ('super_admin','admin')),
+  role           TEXT NOT NULL CHECK (role IN ('super_admin','admin','partner')),
   expires_at     TIMESTAMPTZ NOT NULL,
   consumed_at    TIMESTAMPTZ NULL,
   created_by_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,

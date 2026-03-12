@@ -75,6 +75,7 @@ class UserRole(str, Enum):
 class InviteRole(str, Enum):
     super_admin = "super_admin"
     admin = "admin"
+    partner = "partner"
 
 
 class DenyEventRequest(BaseModel):
@@ -105,6 +106,43 @@ class RegisterRequest(BaseModel):
     email: str = Field(min_length=1)
     phone: str = Field(min_length=1)
     password: str = Field(min_length=8)
+    inviteToken: str = None
+
+
+class SubmitEventRequest(BaseModel):
+    # Partner fields (optional for public users)
+    org_id: int = None
+    submitted_by_user_id: int = None
+    # Public submitter contact (required when org_id is absent)
+    submitter_name: str = None
+    submitter_email: str = None
+    submitter_phone: str = None
+    # Event fields
+    title: str
+    description: str
+    start_datetime: str
+    end_datetime: str = None
+    address: str
+    city: str
+    county: str
+    audience: str = None
+    cost: str = None
+    hyperlink: str = None
+    event_contact: str = None
+
+
+class EditEventRequest(BaseModel):
+    title: str = None
+    description: str = None
+    start_datetime: str = None
+    end_datetime: str = None
+    address: str = None
+    city: str = None
+    county: str = None
+    audience: str = None
+    cost: str = None
+    hyperlink: str = None
+    event_contact: str = None
 
 
 @app.post("/api/login")
@@ -219,11 +257,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         org_row = org_result.mappings().first()
         org_id = org_row["org_id"]
 
-        db.execute(
+        user_result = db.execute(
             text(
                 """
                 INSERT INTO users (email, password_hash, role, org_id, user_name)
                 VALUES (:email, :password_hash, :role, :org_id, :user_name)
+                RETURNING user_id
                 """
             ),
             {
@@ -234,11 +273,108 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
                 "user_name": user_name,
             },
         )
+        user_id = user_result.scalar()
+
+        if payload.inviteToken:
+            db.execute(
+                text("""
+                    UPDATE invitations
+                    SET consumed_at = now()
+                    WHERE token = :token AND consumed_at IS NULL
+                """),
+                {"token": payload.inviteToken},
+            )
+
         db.commit()
-        return {"success": True}
+        return {"success": True, "user_id": user_id, "org_id": org_id}
     except Exception as exc:
         db.rollback()
         return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
+
+
+@app.get("/api/events")
+def list_events(org_id: int = None, db: Session = Depends(get_db)):
+    where = "WHERE org_id = :org_id" if org_id else ""
+    result = db.execute(
+        text(f"""
+            SELECT event_id, org_id, submitter_name, submitter_email, title, description,
+                   start_datetime, end_datetime, address, city, county, audience, cost,
+                   hyperlink, event_contact, status, admin_comment, created_at
+            FROM events
+            {where}
+            ORDER BY created_at DESC
+        """),
+        {"org_id": org_id} if org_id else {}
+    )
+    events = [dict(row) for row in result.mappings().all()]
+    for e in events:
+        for key in ("start_datetime", "end_datetime", "created_at"):
+            if e.get(key) and hasattr(e[key], "isoformat"):
+                e[key] = e[key].isoformat()
+    return JSONResponse({"success": True, "events": events})
+
+
+@app.post("/api/events")
+def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
+    if not payload.org_id and not payload.submitter_email:
+        return JSONResponse(
+            {"success": False, "message": "Submitter email is required for public submissions"},
+            status_code=400,
+        )
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO events
+                  (org_id, submitted_by_user_id, submitter_name, submitter_email, submitter_phone,
+                   title, description, start_datetime, end_datetime, address, city, county,
+                   audience, cost, hyperlink, event_contact, status)
+                VALUES
+                  (:org_id, :submitted_by_user_id, :submitter_name, :submitter_email, :submitter_phone,
+                   :title, :description, :start_datetime, :end_datetime, :address, :city, :county,
+                   :audience, :cost, :hyperlink, :event_contact, 'pending')
+                RETURNING event_id
+            """),
+            payload.dict()
+        )
+        db.commit()
+        return JSONResponse({"success": True, "event_id": result.scalar()}, status_code=201)
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.patch("/api/events/{event_id}")
+def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(get_db)):
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    if not updates:
+        return JSONResponse({"success": False, "message": "No fields to update"}, status_code=400)
+    updates["status"] = "pending"
+    updates["admin_comment"] = None
+    updates["event_id"] = event_id
+    set_clause = ", ".join(f"{k} = :{k}" for k in updates if k != "event_id")
+    result = db.execute(
+        text(f"UPDATE events SET {set_clause} WHERE event_id = :event_id RETURNING event_id"),
+        updates
+    )
+    db.commit()
+    if result.rowcount == 0:
+        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+    return {"success": True}
+
+
+@app.get("/api/invitations/validate")
+def validate_invitation(token: str, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("SELECT role, expires_at, consumed_at FROM invitations WHERE token = :token"),
+        {"token": token}
+    ).mappings().first()
+    if not row:
+        return JSONResponse({"valid": False, "message": "Invalid invitation link"}, status_code=404)
+    if row["consumed_at"] is not None:
+        return JSONResponse({"valid": False, "message": "This invitation has already been used"}, status_code=410)
+    if row["expires_at"] < datetime.now(timezone.utc):
+        return JSONResponse({"valid": False, "message": "This invitation link has expired"}, status_code=410)
+    return JSONResponse({"valid": True, "role": row["role"]})
 
 
 @app.post("/api/events/{event_id}/approve")
