@@ -293,19 +293,22 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/events")
-def list_events(org_id: int = None, db: Session = Depends(get_db)):
-    where = "WHERE org_id = :org_id" if org_id else ""
-    result = db.execute(
-        text(f"""
-            SELECT event_id, org_id, submitter_name, submitter_email, title, description,
-                   start_datetime, end_datetime, address, city, county, audience, cost,
-                   hyperlink, event_contact, status, admin_comment, created_at
-            FROM events
-            {where}
-            ORDER BY created_at DESC
-        """),
-        {"org_id": org_id} if org_id else {}
-    )
+def list_events(org_id: int = None, status: str = None, db: Session = Depends(get_db)):
+    conditions = []
+    params = {}
+    if org_id:
+        conditions.append("org_id = :org_id")
+        params["org_id"] = org_id
+    if status:
+        conditions.append("status = :status")
+        params["status"] = status
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    result = db.execute(text(f"""
+        SELECT event_id, org_id, submitter_name, submitter_email, title, description,
+               start_datetime, end_datetime, address, city, county, audience, cost,
+               hyperlink, event_contact, status, admin_comment, created_at
+        FROM events {where} ORDER BY created_at DESC
+    """), params)
     events = [dict(row) for row in result.mappings().all()]
     for e in events:
         for key in ("start_datetime", "end_datetime", "created_at"):
