@@ -42,8 +42,8 @@ const publicSchema = z.object({
   county: z.string().min(1, 'County is required'),
   audience: z.string().optional(),
   cost: z.string().optional(),
-  hyperlink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  event_contact: z.string().email('Must be a valid email').optional().or(z.literal('')),
+  hyperlink: z.union([z.literal(''), z.string().url('Must be a valid URL')]).optional(),
+  event_contact: z.union([z.literal(''), z.string().email('Must be a valid email')]).optional(),
 });
 
 export default function SubmitPage() {
@@ -104,8 +104,8 @@ export default function SubmitPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
-      if (!data.success) {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setServerError(data.message || 'An error occurred. Please try again.');
       } else {
         setSubmitted(true);
