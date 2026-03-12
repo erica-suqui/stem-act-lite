@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -44,27 +44,30 @@ export default function PartnerDashboard() {
   const orgId = typeof window !== 'undefined' ? localStorage.getItem('orgId') : null;
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userID') : null;
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     if (!orgId) return;
     setLoading(true);
     try {
       const res = await fetch(apiUrl(`/api/events?org_id=${orgId}`));
       if (!res.ok) throw new Error('Failed to fetch events');
       const data = await res.json();
-      setEvents(Array.isArray(data) ? data : []);
+      setEvents(Array.isArray(data.events) ? data.events : []);
     } catch (err) {
       addToast('Failed to load events.', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId]);
 
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchEvents]);
 
   const handleSubmitNew = async (formData) => {
+    if (!orgId || !userId) {
+      addToast('Session expired. Please log in again.', 'error');
+      return { success: false, message: 'Not authenticated' };
+    }
     try {
       const res = await fetch(apiUrl('/api/events'), {
         method: 'POST',
@@ -83,6 +86,7 @@ export default function PartnerDashboard() {
       addToast('Event submitted successfully!', 'success');
       setSubmitOpen(false);
       fetchEvents();
+      return { success: true };
     } catch (err) {
       addToast('An unexpected error occurred.', 'error');
       return { success: false, message: 'An unexpected error occurred.' };
@@ -105,6 +109,7 @@ export default function PartnerDashboard() {
       addToast('Event updated successfully!', 'success');
       setEditEvent(null);
       fetchEvents();
+      return { success: true };
     } catch (err) {
       addToast('An unexpected error occurred.', 'error');
       return { success: false, message: 'An unexpected error occurred.' };
