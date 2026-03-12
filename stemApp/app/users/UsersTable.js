@@ -162,6 +162,7 @@ export default function UsersTable({ users: initialUsers }) {
 						value={inviteRole}
 						onChange={e => { setInviteRole(e.target.value); setInviteLink(null); }}
 					>
+						<option value="partner">Partner</option>
 						<option value="admin">Admin</option>
 						<option value="super_admin">Super Admin</option>
 					</select>
