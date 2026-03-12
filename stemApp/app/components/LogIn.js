@@ -59,7 +59,7 @@ export default function LogIn(){
                 localStorage.setItem('role', data.role);
                 localStorage.setItem('orgId', data.orgId);
                 const roleRoutes = {
-                    partner: data.orgId ? `/partners/${data.orgId}` : '/partners',
+                    partner: '/partner',
                     admin: '/superAdminDashboard',
                     super_admin: '/superAdminDashboard',
                 };
