@@ -29,6 +29,13 @@ export default function NavLinks() {
 		return (
 			<div className="nav-links">
 				<a
+					href="/partner"
+					className={pathname === '/partner' ? 'nav-active' : undefined}
+					aria-current={pathname === '/partner' ? 'page' : undefined}
+				>
+					My Events
+				</a>
+				<a
 					href="https://stemact.org"
 					target="_blank"
 					rel="noopener noreferrer"
