@@ -236,7 +236,7 @@ export default function EventSubmissionForm({
         <TextField
           label="Event Link"
           name="hyperlink"
-          type="url"
+          type="text"
           value={formData.hyperlink}
           onChange={handleChange}
           fullWidth
@@ -247,7 +247,7 @@ export default function EventSubmissionForm({
         <TextField
           label="Event Contact Email"
           name="event_contact"
-          type="email"
+          type="text"
           value={formData.event_contact}
           onChange={handleChange}
           fullWidth
@@ -271,7 +271,7 @@ export default function EventSubmissionForm({
             disabled={isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
           >
-            {isSubmitting ? 'Submitting…' : submitLabel}
+            {submitLabel}
           </Button>
         </Box>
       </Stack>
