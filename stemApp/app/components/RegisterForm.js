@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
+import EventSubmissionForm from '@/app/components/EventSubmissionForm';
 
 export default function RegisterForm(){
     //Form Data
@@ -17,9 +19,20 @@ export default function RegisterForm(){
         phone: '',
     });
 
-    //Form Errors to raise Flags using Zod Library 
+    //Form Errors to raise Flags using Zod Library
     const [errors, setErrors] = useState({})
     const [showModal, setShowModal] = useState(false);
+
+    const searchParams = useSearchParams();
+    const inviteToken = searchParams.get('token');
+
+    const [tokenValid, setTokenValid] = useState(inviteToken ? null : true); // null=checking, true=valid, false=invalid
+    const [tokenError, setTokenError] = useState('');
+
+    const [registered, setRegistered] = useState(false);
+    const [registeredUser, setRegisteredUser] = useState(null); // { org_id, user_id }
+    const [addingEvents, setAddingEvents] = useState(false);
+    const [eventsAdded, setEventsAdded] = useState(0);
 
 
     const registerSchema = z.object({
@@ -38,6 +51,17 @@ export default function RegisterForm(){
         message: "Passwords do not match",
         path: ['confirmPassword']
     });
+
+    useEffect(() => {
+        if (!inviteToken) return;
+        fetch(apiUrl(`/api/invitations/validate?token=${inviteToken}`))
+            .then(r => r.json())
+            .then(data => {
+                if (data.valid) setTokenValid(true);
+                else { setTokenValid(false); setTokenError(data.message || 'Invalid invitation link'); }
+            })
+            .catch(() => { setTokenValid(false); setTokenError('Could not verify invitation. Please try again.'); });
+    }, [inviteToken]);
 
     const navigate = useRouter();
 
@@ -67,15 +91,13 @@ export default function RegisterForm(){
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)  
+                body: JSON.stringify({ ...formData, inviteToken: inviteToken || null })
             });
-           const data = await response.json();  
+           const data = await response.json();
 
             if (data.success) {
-                setShowModal(true);
-                setTimeout(() => {
-                    navigate.push("/login");
-                }, 2000);
+                setRegisteredUser({ org_id: data.org_id, user_id: data.user_id });
+                setRegistered(true);
             } else {
                 alert("Error: " + data.error);
             }     
@@ -88,6 +110,62 @@ export default function RegisterForm(){
 
     };
     
+    if (inviteToken && tokenValid === null) {
+        return <div className="register-form"><p>Verifying your invitation...</p></div>;
+    }
+    if (inviteToken && tokenValid === false) {
+        return (
+            <div className="register-form">
+                <h3>Invitation Error</h3>
+                <p>{tokenError}</p>
+            </div>
+        );
+    }
+
+    if (registered && !addingEvents) {
+        return (
+            <div className="register-form">
+                <h3>Registration successful!</h3>
+                <p>Would you like to submit an event now?</p>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <button onClick={() => setAddingEvents(true)}>Yes, submit an event</button>
+                    <button onClick={() => navigate.push('/partner')}>No, go to dashboard</button>
+                </div>
+            </div>
+        );
+    }
+
+    if (addingEvents) {
+        const handleEventSubmit = async (formData) => {
+            if (!registeredUser) return { success: false, message: 'Session error' };
+            const res = await fetch(apiUrl('/api/events'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    org_id: registeredUser.org_id,
+                    submitted_by_user_id: registeredUser.user_id,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) setEventsAdded(prev => prev + 1);
+            return data;
+        };
+
+        return (
+            <div className="register-form">
+                <h3>Submit Event(s)</h3>
+                {eventsAdded > 0 && <p>{eventsAdded} event(s) added.</p>}
+                <EventSubmissionForm onSubmit={handleEventSubmit} submitLabel="Add Event" />
+                {eventsAdded > 0 && (
+                    <button onClick={() => navigate.push('/partner')} style={{ marginTop: '1rem' }}>
+                        Done — Go to Dashboard
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className = "register-form">
             <form className = "form-fields" onSubmit = {handleFormSubmit}>
