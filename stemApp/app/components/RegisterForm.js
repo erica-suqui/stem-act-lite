@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -21,7 +21,6 @@ export default function RegisterForm(){
 
     //Form Errors to raise Flags using Zod Library
     const [errors, setErrors] = useState({})
-    const [showModal, setShowModal] = useState(false);
 
     const searchParams = useSearchParams();
     const inviteToken = searchParams.get('token');
@@ -33,6 +32,7 @@ export default function RegisterForm(){
     const [registeredUser, setRegisteredUser] = useState(null); // { org_id, user_id }
     const [addingEvents, setAddingEvents] = useState(false);
     const [eventsAdded, setEventsAdded] = useState(0);
+    const [formKey, setFormKey] = useState(0);
 
 
     const registerSchema = z.object({
@@ -54,16 +54,41 @@ export default function RegisterForm(){
 
     useEffect(() => {
         if (!inviteToken) return;
-        fetch(apiUrl(`/api/invitations/validate?token=${inviteToken}`))
+        const controller = new AbortController();
+        fetch(apiUrl(`/api/invitations/validate?token=${encodeURIComponent(inviteToken)}`), { signal: controller.signal })
             .then(r => r.json())
             .then(data => {
                 if (data.valid) setTokenValid(true);
                 else { setTokenValid(false); setTokenError(data.message || 'Invalid invitation link'); }
             })
-            .catch(() => { setTokenValid(false); setTokenError('Could not verify invitation. Please try again.'); });
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                setTokenValid(false);
+                setTokenError('Could not verify invitation. Please try again.');
+            });
+        return () => controller.abort();
     }, [inviteToken]);
 
     const navigate = useRouter();
+
+    const handleEventSubmit = useCallback(async (formData) => {
+        if (!registeredUser) return { success: false, message: 'Session error' };
+        const res = await fetch(apiUrl('/api/events'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...formData,
+                org_id: registeredUser.org_id,
+                submitted_by_user_id: registeredUser.user_id,
+            }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            setEventsAdded(prev => prev + 1);
+            setFormKey(prev => prev + 1);
+        }
+        return data;
+    }, [registeredUser]);
 
     const handleChange = (e) => {
         const {name,value} = e.target;
@@ -136,27 +161,11 @@ export default function RegisterForm(){
     }
 
     if (addingEvents) {
-        const handleEventSubmit = async (formData) => {
-            if (!registeredUser) return { success: false, message: 'Session error' };
-            const res = await fetch(apiUrl('/api/events'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    org_id: registeredUser.org_id,
-                    submitted_by_user_id: registeredUser.user_id,
-                }),
-            });
-            const data = await res.json();
-            if (data.success) setEventsAdded(prev => prev + 1);
-            return data;
-        };
-
         return (
             <div className="register-form">
                 <h3>Submit Event(s)</h3>
                 {eventsAdded > 0 && <p>{eventsAdded} event(s) added.</p>}
-                <EventSubmissionForm onSubmit={handleEventSubmit} submitLabel="Add Event" />
+                <EventSubmissionForm key={formKey} onSubmit={handleEventSubmit} submitLabel="Add Event" />
                 {eventsAdded > 0 && (
                     <button onClick={() => navigate.push('/partner')} style={{ marginTop: '1rem' }}>
                         Done — Go to Dashboard
@@ -236,15 +245,8 @@ export default function RegisterForm(){
                 {errors.confirmPassword && <span>{errors.confirmPassword._errors[0]}</span>}
                 <button type = "submit" >Submit</button>
 
-                
+
             </form>
-            {showModal && (
-            <div className="modal-overlay-register-page">
-                <div className="modal-box-register-page">
-                <p>Registration successful! Redirecting to login...</p>
-                </div>
-            </div>
-            )}
         </div>
     );
 }
