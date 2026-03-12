@@ -8,6 +8,8 @@ import { apiUrl } from '@/lib/api';
 export default function RegisterForm(){
     //Form Data
     const [formData,setFormData] = useState ({
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -21,6 +23,8 @@ export default function RegisterForm(){
 
 
     const registerSchema = z.object({
+        firstName: z.string().min(1, "First name required"),
+        lastName: z.string().min(1, "Last name required"),
         orgName : z.string().min(1, "Organization Name Required"),
         email: z.string().email("Invalid email address"),
         phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits (no dashes or spaces)"),
@@ -87,6 +91,25 @@ export default function RegisterForm(){
     return (
         <div className = "register-form">
             <form className = "form-fields" onSubmit = {handleFormSubmit}>
+                <p>First Name:</p>
+                <input
+                type="text"
+                name="firstName"
+                placeholder="First Name"
+                value={formData.firstName}
+                onChange={handleChange}
+                />
+                {errors.firstName && <span>{errors.firstName._errors[0]}</span>}
+
+                <p>Last Name:</p>
+                <input
+                type="text"
+                name="lastName"
+                placeholder="Last Name"
+                value={formData.lastName}
+                onChange={handleChange}
+                />
+                {errors.lastName && <span>{errors.lastName._errors[0]}</span>}
                 
                 <p >Organization Name:</p>
                 <input type = "text" 

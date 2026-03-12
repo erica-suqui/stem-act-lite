@@ -48,7 +48,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 	const filtered = tabEvents.filter(e => {
 		const matchStatus = statusFilter === 'all' || e.status === statusFilter;
 		const matchOrg    = activeTab === 'viewer' || orgFilter === 'all' || String(e.org_id) === orgFilter;
-		const matchSearch = search === '' || e.title.toLowerCase().includes(search.toLowerCase());
+		const query = search.toLowerCase();
+		const tagNames = Array.isArray(e.tag_names) ? e.tag_names : [];
+		const matchSearch = search === ''
+			|| e.title.toLowerCase().includes(query)
+			|| tagNames.some(tag => tag.toLowerCase().includes(query));
 		return matchStatus && matchOrg && matchSearch;
 	});
 
@@ -168,9 +172,9 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 					type="search"
 					value={search}
 					onChange={e => setSearch(e.target.value)}
-					placeholder="Filter by title…"
-				className="search-input"
-					aria-label="Search events by title"
+					placeholder="Filter by title or tag…"
+					className="search-input"
+					aria-label="Search events by title or tag"
 				/>
 
 				<label htmlFor="status-filter">Status:</label>
@@ -221,6 +225,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 							<th scope="col">Time</th>
 							<th scope="col">Location</th>
 							<th scope="col">Audience</th>
+							<th scope="col">Tags</th>
 							<th scope="col">Cost</th>
 							<th scope="col">Status</th>
 							<th scope="col">Submitted</th>
@@ -275,6 +280,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 											<small>{event.address}</small>
 										</td>
 										<td>{event.audience}</td>
+										<td>{event.tag_names?.length ? event.tag_names.join(', ') : '—'}</td>
 										<td>{formatCost(event.cost)}</td>
 										<td>
 											<span className={`status-badge status-${event.status}`}>
@@ -341,7 +347,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 									</tr>
 									{expandedId === event.event_id && (
 										<tr className="details-row" id={`details-${event.event_id}`}>
-											<td colSpan={10}>
+											<td colSpan={11}>
 												<div className="event-details">
 													<h4>Description</h4>
 													<p>{event.description}</p>

@@ -6,6 +6,7 @@ import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import Toast from '../components/Toast';
 import { useToast } from '@/hooks/useToast';
 import { apiUrl } from '@/lib/api';
+import { formatFullName } from '@/lib/utils';
 
 const STATUS_META = {
 	active:   { Icon: CheckCircle, label: 'Active' },
@@ -36,7 +37,10 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 
 	const filtered = organizations.filter(org => {
 		const q = search.toLowerCase();
-		const matchSearch = org.org_name.toLowerCase().includes(q) || org.contact_email.toLowerCase().includes(q);
+		const contactName = formatFullName(org.contact_first_name, org.contact_last_name).toLowerCase();
+		const matchSearch = org.org_name.toLowerCase().includes(q)
+			|| contactName.includes(q)
+			|| org.contact_email.toLowerCase().includes(q);
 		const matchStatus = statusFilter === 'all' || org.status === statusFilter;
 		return matchSearch && matchStatus;
 	});
@@ -90,8 +94,8 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 					type="search"
 					value={search}
 					onChange={e => setSearch(e.target.value)}
-					placeholder="Organization name or email…"
-					aria-label="Search by organization name or email"
+					placeholder="Organization, contact name, or email…"
+					aria-label="Search by organization name, contact name, or email"
 					className="search-input"
 					autoComplete="off"
 				/>
@@ -128,7 +132,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 										<strong>{org.org_name}</strong>
 									</Link>
 								</td>
-									<td>{org.contact_name || '—'}</td>
+									<td>{formatFullName(org.contact_first_name, org.contact_last_name)}</td>
 									<td>
 										<a
 											href={`mailto:${org.contact_email}`}

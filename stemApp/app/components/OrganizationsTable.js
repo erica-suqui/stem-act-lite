@@ -1,3 +1,5 @@
+import { formatFullName } from '@/lib/utils';
+
 export default function OrganizationsTable({ organizations }) {
 	return (
 		<div className="table-wrapper">
@@ -15,7 +17,7 @@ export default function OrganizationsTable({ organizations }) {
 					{organizations.map(org => (
 						<tr key={org.org_id}>
 							<td>{org.org_name}</td>
-							<td>{org.contact_name || '—'}</td>
+							<td>{formatFullName(org.contact_first_name, org.contact_last_name)}</td>
 							<td>
 								<a href={`mailto:${org.contact_email}`}>{org.contact_email}</a>
 							</td>

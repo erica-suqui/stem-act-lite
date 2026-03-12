@@ -99,6 +99,8 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    firstName: str = Field(min_length=1)
+    lastName: str = Field(min_length=1)
     orgName: str = Field(min_length=1)
     email: str = Field(min_length=1)
     phone: str = Field(min_length=1)
@@ -161,6 +163,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @app.post("/api/register")
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
+    first_name = payload.firstName.strip()
+    last_name = payload.lastName.strip()
     org_name = payload.orgName.strip()
     phone = payload.phone.strip()
 
@@ -184,13 +188,29 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         org_result = db.execute(
             text(
                 """
-                INSERT INTO organizations (org_name, contact_email, contact_phone, status)
-                VALUES (:org_name, :contact_email, :contact_phone, :status)
+                INSERT INTO organizations (
+                    org_name,
+                    contact_first_name,
+                    contact_last_name,
+                    contact_email,
+                    contact_phone,
+                    status
+                )
+                VALUES (
+                    :org_name,
+                    :contact_first_name,
+                    :contact_last_name,
+                    :contact_email,
+                    :contact_phone,
+                    :status
+                )
                 RETURNING org_id
                 """
             ),
             {
                 "org_name": org_name,
+                "contact_first_name": first_name,
+                "contact_last_name": last_name,
                 "contact_email": email,
                 "contact_phone": phone,
                 "status": OrganizationStatus.pending.value,

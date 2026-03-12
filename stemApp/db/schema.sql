@@ -7,13 +7,14 @@ BEGIN;
 -- =========================
 
 CREATE TABLE IF NOT EXISTS organizations (
-  org_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  org_name      TEXT NOT NULL,
-  contact_name  TEXT NULL,
-  contact_email TEXT NOT NULL,
-  contact_phone TEXT NOT NULL,
-  status        TEXT NOT NULL DEFAULT 'pending'
-               CHECK (status IN ('pending','active','disabled','approved','rejected','inactive'))
+  org_id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  org_name            TEXT NOT NULL,
+  contact_first_name  TEXT NULL,
+  contact_last_name   TEXT NULL,
+  contact_email       TEXT NOT NULL,
+  contact_phone       TEXT NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','active','disabled','approved','rejected','inactive'))
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -31,16 +32,17 @@ CREATE TABLE IF NOT EXISTS users (
 -- =========================
 
 CREATE TABLE IF NOT EXISTS org_applications (
-  application_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  org_name       TEXT NOT NULL,
-  contact_name   TEXT NOT NULL,
-  contact_email  TEXT NOT NULL,
-  contact_phone  TEXT NOT NULL,
-  website        TEXT NULL,
-  notes          TEXT NULL,
-  status         TEXT NOT NULL DEFAULT 'pending'
-                CHECK (status IN ('pending','approved','rejected')),
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  application_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  org_name            TEXT NOT NULL,
+  contact_first_name  TEXT NOT NULL,
+  contact_last_name   TEXT NOT NULL,
+  contact_email       TEXT NOT NULL,
+  contact_phone       TEXT NOT NULL,
+  website             TEXT NULL,
+  notes               TEXT NULL,
+  status              TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','approved','rejected')),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- =========================
@@ -81,6 +83,21 @@ CREATE TABLE IF NOT EXISTS events (
 
   CONSTRAINT chk_event_end_after_start
     CHECK (end_datetime IS NULL OR end_datetime >= start_datetime)
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  tag_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  slug        TEXT NOT NULL UNIQUE,
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS event_tags (
+  event_id    BIGINT NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  tag_id      BIGINT NOT NULL REFERENCES tags(tag_id) ON DELETE RESTRICT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (event_id, tag_id)
 );
 
 -- =========================
@@ -151,6 +168,9 @@ CREATE INDEX IF NOT EXISTS idx_users_org_id        ON users(org_id);
 CREATE INDEX IF NOT EXISTS idx_events_org_id       ON events(org_id);
 CREATE INDEX IF NOT EXISTS idx_events_status       ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_county       ON events(county);
+CREATE INDEX IF NOT EXISTS idx_tags_slug           ON tags(slug);
+CREATE INDEX IF NOT EXISTS idx_tags_active         ON tags(is_active);
+CREATE INDEX IF NOT EXISTS idx_event_tags_tag_id   ON event_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_event_revisions_evt ON event_revisions(event_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_evt   ON notifications(event_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_app   ON notifications(application_id);
