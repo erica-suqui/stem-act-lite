@@ -6,7 +6,16 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 
-const CT_COUNTIES = ['Fairfield','Hartford','Litchfield','Middlesex','New Haven','New London','Tolland','Windham'];
+const SC_COUNTIES = [
+  'Abbeville','Aiken','Allendale','Anderson','Bamberg','Barnwell','Beaufort',
+  'Berkeley','Calhoun','Charleston','Cherokee','Chester','Chesterfield',
+  'Clarendon','Colleton','Darlington','Dillon','Dorchester','Edgefield',
+  'Fairfield','Florence','Georgetown','Greenville','Greenwood','Hampton',
+  'Horry','Jasper','Kershaw','Lancaster','Laurens','Lee','Lexington',
+  'Marion','Marlboro','McCormick','Newberry','Oconee','Orangeburg',
+  'Pickens','Richland','Saluda','Spartanburg','Sumter','Union',
+  'Williamsburg','York',
+];
 
 export default function PublicEventsClient({ events }) {
   const [county, setCounty] = useState('');
@@ -38,7 +47,7 @@ export default function PublicEventsClient({ events }) {
             onChange={e => setCounty(e.target.value)}
           >
             <MenuItem value="">All Counties</MenuItem>
-            {CT_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+            {SC_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </Select>
         </FormControl>
 

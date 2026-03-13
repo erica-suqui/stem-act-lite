@@ -4,7 +4,7 @@ import ThemeRegistry from './components/ThemeRegistry';
 
 export const metadata = {
   title: 'STEM-ACT',
-  description: 'STEM events across Connecticut',
+  description: 'STEM events across South Carolina',
 };
 
 export default function RootLayout({ children }) {

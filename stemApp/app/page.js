@@ -19,7 +19,7 @@ export default async function HomePage() {
     <Box>
       <Box sx={{ bgcolor: 'primary.dark', color: 'white', py: 5, px: 3, textAlign: 'center' }}>
         <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
-          STEM Events in Connecticut
+          STEM Events in South Carolina
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.9 }}>
           Discover approved STEM events near you — for students, families, and educators.

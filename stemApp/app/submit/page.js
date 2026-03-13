@@ -18,15 +18,15 @@ import {
 } from '@mui/material';
 import { apiUrl } from '@/lib/api';
 
-const CT_COUNTIES = [
-  'Fairfield',
-  'Hartford',
-  'Litchfield',
-  'Middlesex',
-  'New Haven',
-  'New London',
-  'Tolland',
-  'Windham',
+const SC_COUNTIES = [
+  'Abbeville','Aiken','Allendale','Anderson','Bamberg','Barnwell','Beaufort',
+  'Berkeley','Calhoun','Charleston','Cherokee','Chester','Chesterfield',
+  'Clarendon','Colleton','Darlington','Dillon','Dorchester','Edgefield',
+  'Fairfield','Florence','Georgetown','Greenville','Greenwood','Hampton',
+  'Horry','Jasper','Kershaw','Lancaster','Laurens','Lee','Lexington',
+  'Marion','Marlboro','McCormick','Newberry','Oconee','Orangeburg',
+  'Pickens','Richland','Saluda','Spartanburg','Sumter','Union',
+  'Williamsburg','York',
 ];
 
 const publicSchema = z.object({
@@ -262,7 +262,7 @@ export default function SubmitPage() {
               label="County"
               onChange={handleChange}
             >
-              {CT_COUNTIES.map((county) => (
+              {SC_COUNTIES.map((county) => (
                 <MenuItem key={county} value={county}>
                   {county}
                 </MenuItem>
