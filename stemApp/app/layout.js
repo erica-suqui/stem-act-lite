@@ -1,4 +1,5 @@
 import './globals.css';
+import 'leaflet/dist/leaflet.css';
 import AdminNav from './components/AdminNav';
 import ThemeRegistry from './components/ThemeRegistry';
 
