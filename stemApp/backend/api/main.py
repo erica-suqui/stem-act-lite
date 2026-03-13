@@ -614,3 +614,61 @@ def validate_partner_code(code: str, db: Session = Depends(get_db)):
         return JSONResponse({"valid": False, "message": "This code has expired"}, status_code=410)
 
     return {"valid": True}
+
+
+@app.get("/api/partner-codes")
+def list_partner_codes(db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("""
+            SELECT
+                pc.code_id,
+                pc.code,
+                pc.expires_at,
+                pc.consumed_at,
+                pc.created_at,
+                o.org_name AS consumed_by_org
+            FROM partner_codes pc
+            LEFT JOIN organizations o ON o.org_id = pc.consumed_by_org_id
+            ORDER BY pc.created_at DESC
+        """)
+    ).mappings().all()
+
+    codes = []
+    now = datetime.now(timezone.utc)
+    for r in rows:
+        if r["consumed_at"] is not None:
+            status = "used"
+        elif r["expires_at"] < now:
+            status = "expired"
+        else:
+            status = "active"
+        codes.append({
+            "code_id": r["code_id"],
+            "code": r["code"],
+            "expires_at": r["expires_at"].isoformat(),
+            "consumed_at": r["consumed_at"].isoformat() if r["consumed_at"] else None,
+            "created_at": r["created_at"].isoformat(),
+            "consumed_by_org": r["consumed_by_org"],
+            "status": status,
+        })
+    return {"success": True, "codes": codes}
+
+
+@app.post("/api/partner-codes/{code_id}/revoke")
+def revoke_partner_code(code_id: int, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("SELECT code_id, consumed_at FROM partner_codes WHERE code_id = :id"),
+        {"id": code_id},
+    ).mappings().first()
+
+    if row is None:
+        return JSONResponse({"success": False, "message": "Code not found"}, status_code=404)
+    if row["consumed_at"] is not None:
+        return JSONResponse({"success": False, "message": "Code already consumed"}, status_code=400)
+
+    db.execute(
+        text("UPDATE partner_codes SET consumed_at = now() WHERE code_id = :id"),
+        {"id": code_id},
+    )
+    db.commit()
+    return {"success": True}
