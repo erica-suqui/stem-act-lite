@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import DenyModal from './DenyModal';
 import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
@@ -12,9 +11,9 @@ import { formatDate, formatCost, formatTimeRange } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 
 const STATUS_META = {
-	pending:  { Icon: Clock,       label: 'Pending' },
-	approved: { Icon: CheckCircle, label: 'Approved' },
-	denied:   { Icon: XCircle,     label: 'Denied' },
+	pending:  { label: 'Pending' },
+	approved: { label: 'Approved' },
+	denied:   { label: 'Denied' },
 };
 
 export default function EventsTable({ events: initialEvents, organizations }) {
@@ -219,15 +218,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 					</caption>
 					<thead>
 						<tr>
-							<th scope="col">Event Title</th>
-							<th scope="col">{activeTab === 'partner' ? 'Organization' : 'Submitted By'}</th>
-							<th scope="col">Date</th>
-							<th scope="col">Time</th>
+							<th scope="col">Event</th>
+							<th scope="col">Date &amp; Time</th>
 							<th scope="col">Location</th>
-							<th scope="col">Audience</th>
-							<th scope="col">Tags</th>
+							<th scope="col">Audience &amp; Tags</th>
 							<th scope="col">Cost</th>
-							<th scope="col">Status</th>
 							<th scope="col">Submitted</th>
 							<th scope="col">Actions</th>
 						</tr>
@@ -236,36 +231,44 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 						{filtered.map(event => {
 							const isLoading  = loadingId === event.event_id;
 							const statusMeta = STATUS_META[event.status];
-							const StatusIcon = statusMeta?.Icon;
+							const visibleTags = event.tag_names?.slice(0, 2) ?? [];
+							const hasMoreTags = (event.tag_names?.length ?? 0) > visibleTags.length;
 							return (
 								<React.Fragment key={event.event_id}>
 									<tr className="event-row">
 										<td>
-											<strong>{event.title}</strong>
-											{event.event_link && (
-												<>
-													<br />
-													<a
-														href={event.event_link}
-														target="_blank"
-														rel="noopener noreferrer"
-														aria-label={`${event.title} — external event link (opens in new tab)`}
-													>
-														Event Link
-													</a>
-												</>
-											)}
-										</td>
-										<td>
-											{activeTab === 'partner'
-												? event.org_name
-												: (event.submitter_name ?? <em>Unknown</em>)
-											}
-											<br />
-											<small>{event.contact_email}</small>
+											<div className="event-summary">
+												<span
+													className={`status-dot status-dot-${event.status}`}
+													aria-label={`Status: ${statusMeta?.label ?? event.status}`}
+													title={statusMeta?.label ?? event.status}
+												/>
+												<div className="event-summary-content">
+													<strong>{event.title}</strong>
+													<small>
+														{activeTab === 'partner'
+															? (event.org_name || 'Unknown organization')
+															: (event.submitter_name || 'Unknown submitter')
+														}
+													</small>
+													{event.contact_email && <small>{event.contact_email}</small>}
+													{event.event_link && (
+														<a
+															href={event.event_link}
+															target="_blank"
+															rel="noopener noreferrer"
+															aria-label={`${event.title} — external event link (opens in new tab)`}
+														>
+															Event Link
+														</a>
+													)}
+												</div>
+											</div>
 										</td>
 										<td>
 											{formatDate(event.start_datetime)}
+											<br />
+											<small>{formatTimeRange(event.start_datetime, event.end_datetime)}</small>
 											{event.end_datetime && formatDate(event.end_datetime) !== formatDate(event.start_datetime) && (
 												<>
 													<br />
@@ -273,23 +276,20 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 												</>
 											)}
 										</td>
-										<td>{formatTimeRange(event.start_datetime, event.end_datetime)}</td>
 										<td>
 											{event.city}, {event.county}
 											<br />
 											<small>{event.address}</small>
 										</td>
-										<td>{event.audience}</td>
-										<td>{event.tag_names?.length ? event.tag_names.join(', ') : '—'}</td>
-										<td>{formatCost(event.cost)}</td>
 										<td>
-											<span className={`status-badge status-${event.status}`}>
-												{StatusIcon && (
-													<StatusIcon size={12} aria-hidden="true" style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-												)}
-												{statusMeta?.label ?? event.status}
-											</span>
+											{event.audience}
+											<br />
+											<small>
+												{visibleTags.length ? visibleTags.join(', ') : 'No tags'}
+												{hasMoreTags ? ', ...' : ''}
+											</small>
 										</td>
+										<td>{formatCost(event.cost)}</td>
 										<td>{formatDate(event.submitted_at)}</td>
 										<td className="actions-cell">
 											{event.status === 'pending' && (
@@ -347,7 +347,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 									</tr>
 									{expandedId === event.event_id && (
 										<tr className="details-row" id={`details-${event.event_id}`}>
-											<td colSpan={11}>
+											<td colSpan={7}>
 												<div className="event-details">
 													<h4>Description</h4>
 													<p>{event.description}</p>
@@ -366,7 +366,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 						})}
 						{filtered.length === 0 && (
 							<tr>
-								<td colSpan={10} className="no-data">
+								<td colSpan={7} className="no-data">
 									No {activeTab === 'partner' ? 'partner' : 'viewer'} events match the selected filters.
 								</td>
 							</tr>

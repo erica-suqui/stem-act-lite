@@ -9,7 +9,7 @@ export default function StatsCards({ stats, onFilter, activeFilter }) {
 	];
 
 	return (
-		<div className="stats-grid">
+		<div className="stats-grid" role="group" aria-label="Filter events by status">
 			{cards.map(({ key, filterValue, className, label }) => {
 				const isActive = activeFilter === filterValue;
 				return (
@@ -20,8 +20,8 @@ export default function StatsCards({ stats, onFilter, activeFilter }) {
 						aria-pressed={isActive}
 						aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()} event${stats[key] !== 1 ? 's' : ''}`}
 					>
-						<span className="stat-number">{stats[key]}</span>
 						<span className="stat-label">{label}</span>
+						<span className="stat-number" aria-hidden="true">{stats[key]}</span>
 					</button>
 				);
 			})}
