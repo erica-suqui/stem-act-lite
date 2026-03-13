@@ -548,30 +548,37 @@ def revoke_event(event_id: int, db: Session = Depends(get_db)):
 
 
 class CreateOrganizationRequest(BaseModel):
-    org_name: str
-    contact_first_name: str
-    contact_last_name: str
-    contact_email: str
-    contact_phone: str = ''
+    org_name: str = Field(min_length=1)
 
 
 @app.post("/api/organizations")
 def create_organization(payload: CreateOrganizationRequest, db: Session = Depends(get_db)):
-    try:
-        result = db.execute(
-            text("""
-                INSERT INTO organizations (org_name, contact_first_name, contact_last_name, contact_email, contact_phone, status)
-                VALUES (:org_name, :contact_first_name, :contact_last_name, :contact_email, :contact_phone, 'active')
-                RETURNING org_id, org_name, contact_first_name, contact_last_name, contact_email, contact_phone, status
-            """),
-            payload.model_dump(),
-        )
-        row = result.mappings().first()
-        db.commit()
-        return {"success": True, "organization": dict(row)}
-    except Exception as e:
-        db.rollback()
-        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+    existing = db.execute(
+        text("SELECT org_id FROM organizations WHERE lower(org_name) = lower(:name) LIMIT 1"),
+        {"name": payload.org_name.strip()},
+    ).first()
+    if existing is not None:
+        return JSONResponse({"success": False, "error": "An organization with this name already exists"}, status_code=409)
+
+    result = db.execute(
+        text("""
+            INSERT INTO organizations (org_name, contact_email, contact_phone, status)
+            VALUES (:org_name, '', '', :status)
+            RETURNING org_id
+        """),
+        {"org_name": payload.org_name.strip(), "status": OrganizationStatus.active.value},
+    )
+    org_id = result.scalar()
+    db.commit()
+    return {"success": True, "org_id": org_id, "org_name": payload.org_name.strip()}
+
+
+@app.get("/api/organizations")
+def list_organizations(db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("SELECT org_id, org_name, status FROM organizations ORDER BY org_name")
+    ).mappings().all()
+    return {"success": True, "organizations": [dict(r) for r in rows]}
 
 
 @app.post("/api/organizations/{org_id}/status")
