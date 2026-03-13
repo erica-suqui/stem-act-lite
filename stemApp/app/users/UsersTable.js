@@ -9,7 +9,7 @@ import { apiUrl } from '@/lib/api';
 import {
   Box, Grid, Card, CardActionArea, CardContent, Stack, TextField,
   FormControl, InputLabel, Select, MenuItem, Typography, Chip, Button,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 
 const ROLE_CHIP = {
@@ -33,10 +33,7 @@ export default function UsersTable({ users: initialUsers }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editTarget, setEditTarget]     = useState(null);
   const [editRole, setEditRole]         = useState('');
-  const [inviteRole, setInviteRole]     = useState('admin');
-  const [inviteLink, setInviteLink]     = useState(null);
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const { toasts, addToast, dismissToast } = useToast();
+const { toasts, addToast, dismissToast } = useToast();
 
   const superAdminUser = users.find(u => u.role === 'super_admin') ?? null;
 
@@ -99,34 +96,6 @@ export default function UsersTable({ users: initialUsers }) {
     }
   }, [editTarget, editRole]);
 
-  async function handleGenerateInvite(e) {
-    e.preventDefault();
-    setInviteLoading(true);
-    setInviteLink(null);
-    try {
-      const res = await fetch(apiUrl('/api/users/invite'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: inviteRole }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setInviteLink(data.inviteLink);
-      } else {
-        addToast('Error: ' + data.message, 'error');
-      }
-    } catch {
-      addToast('Network error. Please try again.', 'error');
-    } finally {
-      setInviteLoading(false);
-    }
-  }
-
-  async function copyInviteLink() {
-    await navigator.clipboard.writeText(inviteLink);
-    addToast('Invite link copied to clipboard.', 'success');
-  }
-
   const superAdminTakenBy = editTarget && superAdminUser && superAdminUser.user_id !== editTarget.user_id
     ? superAdminUser : null;
 
@@ -150,47 +119,6 @@ export default function UsersTable({ users: initialUsers }) {
           );
         })}
       </Grid>
-
-      {/* Invite Link Generator */}
-      <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom>Generate Invite Link</Typography>
-        <Box component="form" onSubmit={handleGenerateInvite}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel id="invite-role-label">Role</InputLabel>
-              <Select
-                labelId="invite-role-label"
-                value={inviteRole}
-                label="Role"
-                onChange={e => { setInviteRole(e.target.value); setInviteLink(null); }}
-              >
-                <MenuItem value="partner">Partner</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="super_admin">Super Admin</MenuItem>
-              </Select>
-            </FormControl>
-            <Button type="submit" variant="contained" disabled={inviteLoading}>
-              {inviteLoading ? 'Generating…' : 'Generate Link'}
-            </Button>
-          </Stack>
-        </Box>
-        {inviteLink && (
-          <Box role="alert" sx={{ mt: 2 }}>
-            <Alert severity="info" sx={{ mb: 1 }}>
-              This link expires in 48 hours. Share it securely — do not post publicly.
-            </Alert>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <TextField
-                size="small"
-                value={inviteLink}
-                inputProps={{ readOnly: true, 'aria-label': 'Generated invite link', onFocus: e => e.target.select() }}
-                fullWidth
-              />
-              <Button variant="contained" onClick={copyInviteLink}>Copy</Button>
-            </Stack>
-          </Box>
-        )}
-      </Paper>
 
       {/* Filters */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
