@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import os
 import secrets
+import string
 from enum import Enum
 import bcrypt
 
@@ -107,6 +108,22 @@ class RegisterRequest(BaseModel):
     phone: str = Field(min_length=1)
     password: str = Field(min_length=8)
     inviteToken: str = None
+
+
+def generate_partner_code() -> str:
+    """Generate a short, hard-to-guess partner code like STEM-A3X9."""
+    alphabet = string.ascii_uppercase + string.digits
+    suffix = ''.join(secrets.choice(alphabet) for _ in range(4))
+    return f"STEM-{suffix}"
+
+
+class GeneratePartnerCodeRequest(BaseModel):
+    expires_in_days: int = Field(default=7, ge=1, le=90)
+
+
+class RedeemPartnerCodeRequest(BaseModel):
+    code: str
+    org_id: int
 
 
 class SubmitEventRequest(BaseModel):
