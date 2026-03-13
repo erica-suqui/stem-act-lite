@@ -39,6 +39,7 @@ export default function RegisterForm(){
     const [submitError, setSubmitError] = useState('');
     const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
     const [codeMessage, setCodeMessage] = useState('');
+    const [codeOrgName, setCodeOrgName] = useState(null); // org name from code, if any
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -104,19 +105,30 @@ export default function RegisterForm(){
             if (data.valid) {
                 setCodeStatus('valid');
                 setCodeMessage('');
+                setCodeOrgName(data.org_name || null);
+                if (data.org_name) {
+                    setFormData(prev => ({ ...prev, orgName: data.org_name }));
+                }
             } else {
                 setCodeStatus('invalid');
                 setCodeMessage(data.message || 'Invalid code');
+                setCodeOrgName(null);
             }
         } catch {
             setCodeStatus('invalid');
             setCodeMessage('Could not verify code');
+            setCodeOrgName(null);
         }
     };
 
     const handleChange = (e) => {
-        const {name,value} = e.target;
-        setFormData(prev => ({...prev,[name]: value}))
+        const {name, value} = e.target;
+        setFormData(prev => ({...prev, [name]: value}));
+        if (name === 'partnerCode' && !value.trim()) {
+            setCodeStatus(null);
+            setCodeOrgName(null);
+            setFormData(prev => ({ ...prev, partnerCode: value, orgName: '' }));
+        }
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -274,9 +286,16 @@ export default function RegisterForm(){
                                 value={formData.orgName}
                                 onChange={handleChange}
                                 fullWidth
-                                required
+                                required={!codeOrgName}
                                 error={Boolean(errors.orgName)}
-                                helperText={errors.orgName?._errors?.[0]}
+                                helperText={
+                                    codeOrgName
+                                        ? `Joining: ${codeOrgName} — your account will be activated immediately`
+                                        : errors.orgName?._errors?.[0]
+                                }
+                                inputProps={{ readOnly: Boolean(codeOrgName) }}
+                                color={codeOrgName ? 'success' : undefined}
+                                focused={codeOrgName ? true : undefined}
                             />
                             <TextField
                                 label="Email"
@@ -329,9 +348,12 @@ export default function RegisterForm(){
                                 onBlur={handleCodeBlur}
                                 fullWidth
                                 helperText={
-                                    codeStatus === 'valid' ? '✓ Valid code — your account will be activated immediately' :
-                                    codeStatus === 'invalid' ? codeMessage :
-                                    'If you have an access code, enter it here'
+                                    codeStatus === 'valid'
+                                        ? codeOrgName
+                                            ? `✓ Valid code — you will join ${codeOrgName}`
+                                            : '✓ Valid code — your account will be activated immediately'
+                                        : codeStatus === 'invalid' ? codeMessage
+                                        : 'If you have an access code, enter it here'
                                 }
                                 error={codeStatus === 'invalid'}
                                 color={codeStatus === 'valid' ? 'success' : undefined}
