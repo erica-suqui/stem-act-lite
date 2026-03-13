@@ -1,6 +1,7 @@
 import pool from '@/lib/db';
 import UsersTable from './UsersTable';
-import { Box, Typography } from '@mui/material';
+import PartnerCodesAdmin from '../components/PartnerCodesAdmin';
+import { Box, Typography, Divider } from '@mui/material';
 
 export const metadata = {
 	title: 'User Management — STEM-ACT Admin',
@@ -31,6 +32,8 @@ export default async function UsersPage() {
 				User Management
 			</Typography>
 			<UsersTable users={users} />
+			<Divider sx={{ my: 4 }} />
+			<PartnerCodesAdmin />
 		</Box>
 	);
 }
