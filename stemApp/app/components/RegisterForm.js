@@ -20,6 +20,7 @@ export default function RegisterForm(){
         confirmPassword: '',
         orgName: '',
         phone: '',
+        partnerCode: '',
     });
 
     const [errors, setErrors] = useState({})
@@ -36,6 +37,8 @@ export default function RegisterForm(){
     const [eventsAdded, setEventsAdded] = useState(0);
     const [formKey, setFormKey] = useState(0);
     const [submitError, setSubmitError] = useState('');
+    const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
+    const [codeMessage, setCodeMessage] = useState('');
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -92,6 +95,25 @@ export default function RegisterForm(){
         return data;
     }, [registeredUser]);
 
+    const handleCodeBlur = async () => {
+        const code = formData.partnerCode.trim();
+        if (!code) { setCodeStatus(null); return; }
+        try {
+            const res = await fetch(apiUrl(`/api/partner-codes/validate?code=${encodeURIComponent(code)}`));
+            const data = await res.json();
+            if (data.valid) {
+                setCodeStatus('valid');
+                setCodeMessage('');
+            } else {
+                setCodeStatus('invalid');
+                setCodeMessage(data.message || 'Invalid code');
+            }
+        } catch {
+            setCodeStatus('invalid');
+            setCodeMessage('Could not verify code');
+        }
+    };
+
     const handleChange = (e) => {
         const {name,value} = e.target;
         setFormData(prev => ({...prev,[name]: value}))
@@ -117,7 +139,11 @@ export default function RegisterForm(){
             const response = await fetch(apiUrl('/api/register'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, inviteToken: inviteToken || null })
+                body: JSON.stringify({
+                    ...formData,
+                    inviteToken: inviteToken || null,
+                    partnerCode: formData.partnerCode.trim() || null,
+                })
             });
            const data = await response.json();
 
@@ -294,6 +320,23 @@ export default function RegisterForm(){
                                 required
                                 error={Boolean(errors.confirmPassword)}
                                 helperText={errors.confirmPassword?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Partner Access Code (optional)"
+                                name="partnerCode"
+                                value={formData.partnerCode}
+                                onChange={handleChange}
+                                onBlur={handleCodeBlur}
+                                fullWidth
+                                helperText={
+                                    codeStatus === 'valid' ? '✓ Valid code — your account will be activated immediately' :
+                                    codeStatus === 'invalid' ? codeMessage :
+                                    'If you have an access code, enter it here'
+                                }
+                                error={codeStatus === 'invalid'}
+                                color={codeStatus === 'valid' ? 'success' : undefined}
+                                focused={codeStatus === 'valid' ? true : undefined}
+                                inputProps={{ style: { textTransform: 'uppercase' } }}
                             />
                             {submitError && <Alert severity="error">{submitError}</Alert>}
                             <Button type="submit" variant="contained" fullWidth size="large">
