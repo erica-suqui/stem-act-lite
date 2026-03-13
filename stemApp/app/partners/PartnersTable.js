@@ -10,6 +10,7 @@ import {
   Box, Stack, Grid, Card, CardActionArea, CardContent, TextField,
   Typography, Chip, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 
 const STATUS_CHIP = {
@@ -30,6 +31,9 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
   const [search, setSearch]               = useState('');
   const [statusFilter, setStatusFilter]   = useState('all');
   const [loadingId, setLoadingId]         = useState(null);
+  const [addOrgOpen, setAddOrgOpen]       = useState(false);
+  const [addOrgLoading, setAddOrgLoading] = useState(false);
+  const [newOrg, setNewOrg]               = useState({ org_name: '', contact_first_name: '', contact_last_name: '', contact_email: '', contact_phone: '' });
   const { toasts, addToast, dismissToast } = useToast();
 
   const stats = {
@@ -48,6 +52,30 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
     const matchStatus = statusFilter === 'all' || org.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  const handleAddOrg = async () => {
+    setAddOrgLoading(true);
+    try {
+      const res = await fetch(apiUrl('/api/organizations'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrg),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrganizations(prev => [...prev, { ...data.organization, event_count: 0, pending_count: 0 }]);
+        addToast(`${data.organization.org_name} has been added.`, 'success');
+        setAddOrgOpen(false);
+        setNewOrg({ org_name: '', contact_first_name: '', contact_last_name: '', contact_email: '', contact_phone: '' });
+      } else {
+        addToast('Error: ' + data.message, 'error');
+      }
+    } catch {
+      addToast('Network error. Please try again.', 'error');
+    } finally {
+      setAddOrgLoading(false);
+    }
+  };
 
   const updateStatus = useCallback(async (orgId, orgName, status) => {
     setLoadingId(orgId);
@@ -108,6 +136,9 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
         <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
           {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
         </Typography>
+        <Button variant="contained" size="small" onClick={() => setAddOrgOpen(true)}>
+          + Add Organization
+        </Button>
       </Stack>
 
       <TableContainer component={Paper} elevation={1}>
@@ -197,6 +228,66 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
       </TableContainer>
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
+
+      <Dialog open={addOrgOpen} onClose={() => setAddOrgOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Organization</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Organization Name"
+              value={newOrg.org_name}
+              onChange={e => setNewOrg(p => ({ ...p, org_name: e.target.value }))}
+              required
+              fullWidth
+              size="small"
+            />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="First Name"
+                value={newOrg.contact_first_name}
+                onChange={e => setNewOrg(p => ({ ...p, contact_first_name: e.target.value }))}
+                required
+                fullWidth
+                size="small"
+              />
+              <TextField
+                label="Last Name"
+                value={newOrg.contact_last_name}
+                onChange={e => setNewOrg(p => ({ ...p, contact_last_name: e.target.value }))}
+                required
+                fullWidth
+                size="small"
+              />
+            </Stack>
+            <TextField
+              label="Contact Email"
+              type="email"
+              value={newOrg.contact_email}
+              onChange={e => setNewOrg(p => ({ ...p, contact_email: e.target.value }))}
+              required
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="Contact Phone"
+              value={newOrg.contact_phone}
+              onChange={e => setNewOrg(p => ({ ...p, contact_phone: e.target.value }))}
+              fullWidth
+              size="small"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddOrgOpen(false)} disabled={addOrgLoading}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleAddOrg}
+            disabled={addOrgLoading || !newOrg.org_name || !newOrg.contact_first_name || !newOrg.contact_last_name || !newOrg.contact_email}
+          >
+            {addOrgLoading ? 'Creating…' : 'Create Organization'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

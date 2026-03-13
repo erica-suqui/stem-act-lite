@@ -6,6 +6,7 @@ import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
 import StatsCards from './StatsCards';
 import Toast from './Toast';
+import EventSubmissionForm from './EventSubmissionForm';
 import { useToast } from '@/hooks/useToast';
 import { formatDate, formatCost, formatTimeRange } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
@@ -13,6 +14,7 @@ import {
   Box, Stack, Tabs, Tab, TextField, Select, MenuItem, FormControl,
   InputLabel, Typography, Badge, Chip, Button, Collapse,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 
 const STATUS_CHIP = {
@@ -32,6 +34,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
   const [approveTarget, setApproveTarget] = useState(null);
   const [revokeTarget, setRevokeTarget]   = useState(null);
   const [loadingId, setLoadingId]         = useState(null);
+  const [addEventOpen, setAddEventOpen]   = useState(false);
   const { toasts, addToast, dismissToast } = useToast();
 
   const isPartnerTab = activeTab === 0;
@@ -135,6 +138,39 @@ export default function EventsTable({ events: initialEvents, organizations }) {
     }
   }, []);
 
+  const handleAdminAddEvent = useCallback(async (formData) => {
+    try {
+      const submitRes = await fetch(apiUrl('/api/events'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, submitter_name: 'Admin', submitter_email: 'admin' }),
+      });
+      const submitData = await submitRes.json();
+      if (!submitData.success) return { success: false, message: submitData.message };
+
+      const eventId = submitData.event_id;
+      const approveRes = await fetch(apiUrl(`/api/events/${eventId}/approve`), { method: 'POST' });
+      const approveData = await approveRes.json();
+      if (!approveData.success) return { success: false, message: 'Event created but approval failed.' };
+
+      setEvents(prev => [{
+        event_id: eventId,
+        ...formData,
+        org_id: null,
+        submitter_name: 'Admin',
+        status: 'approved',
+        admin_comment: null,
+        created_at: new Date().toISOString(),
+        tag_names: [],
+      }, ...prev]);
+      setAddEventOpen(false);
+      addToast(`"${formData.title}" created and published.`, 'success');
+      return { success: true };
+    } catch {
+      return { success: false, message: 'Network error. Please try again.' };
+    }
+  }, [addToast]);
+
   return (
     <>
       <StatsCards stats={stats} onFilter={setStatusFilter} activeFilter={statusFilter} />
@@ -201,6 +237,9 @@ export default function EventsTable({ events: initialEvents, organizations }) {
         <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
           {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
         </Typography>
+        <Button variant="contained" size="small" onClick={() => setAddEventOpen(true)}>
+          + Add Event
+        </Button>
       </Stack>
 
       <TableContainer component={Paper} elevation={1}>
@@ -350,6 +389,17 @@ export default function EventsTable({ events: initialEvents, organizations }) {
           onClose={() => setRevokeTarget(null)}
         />
       )}
+
+      <Dialog open={addEventOpen} onClose={() => setAddEventOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Event</DialogTitle>
+        <DialogContent dividers>
+          <EventSubmissionForm
+            onSubmit={handleAdminAddEvent}
+            submitLabel="Create &amp; Publish"
+            onCancel={() => setAddEventOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </>

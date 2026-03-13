@@ -547,6 +547,33 @@ def revoke_event(event_id: int, db: Session = Depends(get_db)):
     return {"success": True}
 
 
+class CreateOrganizationRequest(BaseModel):
+    org_name: str
+    contact_first_name: str
+    contact_last_name: str
+    contact_email: str
+    contact_phone: str = ''
+
+
+@app.post("/api/organizations")
+def create_organization(payload: CreateOrganizationRequest, db: Session = Depends(get_db)):
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO organizations (org_name, contact_first_name, contact_last_name, contact_email, contact_phone, status)
+                VALUES (:org_name, :contact_first_name, :contact_last_name, :contact_email, :contact_phone, 'active')
+                RETURNING org_id, org_name, contact_first_name, contact_last_name, contact_email, contact_phone, status
+            """),
+            payload.model_dump(),
+        )
+        row = result.mappings().first()
+        db.commit()
+        return {"success": True, "organization": dict(row)}
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
 @app.post("/api/organizations/{org_id}/status")
 def update_organization_status(
     org_id: int, payload: UpdateOrganizationStatusRequest, db: Session = Depends(get_db)
