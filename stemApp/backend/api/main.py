@@ -108,6 +108,7 @@ class RegisterRequest(BaseModel):
     phone: str = Field(min_length=1)
     password: str = Field(min_length=8)
     inviteToken: str = None
+    partnerCode: str = None
 
 
 def generate_partner_code() -> str:
@@ -233,6 +234,26 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             status_code=409,
         )
 
+    # Validate partner code if provided
+    org_status = OrganizationStatus.pending.value
+    partner_code_row = None
+    if payload.partnerCode:
+        code = payload.partnerCode.upper().strip()
+        partner_code_row = db.execute(
+            text("""
+                SELECT code_id, expires_at, consumed_at
+                FROM partner_codes WHERE code = :code
+            """),
+            {"code": code},
+        ).mappings().first()
+        if partner_code_row is None:
+            return JSONResponse({"success": False, "error": "Invalid partner code"}, status_code=400)
+        if partner_code_row["consumed_at"] is not None:
+            return JSONResponse({"success": False, "error": "Partner code already used"}, status_code=400)
+        if partner_code_row["expires_at"] < datetime.now(timezone.utc):
+            return JSONResponse({"success": False, "error": "Partner code has expired"}, status_code=400)
+        org_status = OrganizationStatus.active.value
+
     try:
         password_hash = bcrypt.hashpw(
             payload.password.encode("utf-8"),
@@ -268,7 +289,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
                 "contact_last_name": last_name,
                 "contact_email": email,
                 "contact_phone": phone,
-                "status": OrganizationStatus.pending.value,
+                "status": org_status,
             },
         )
         org_row = org_result.mappings().first()
@@ -300,6 +321,16 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
                     WHERE token = :token AND consumed_at IS NULL
                 """),
                 {"token": payload.inviteToken},
+            )
+
+        if payload.partnerCode and partner_code_row:
+            db.execute(
+                text("""
+                    UPDATE partner_codes
+                    SET consumed_at = now(), consumed_by_org_id = :org_id
+                    WHERE code_id = :code_id
+                """),
+                {"org_id": org_id, "code_id": partner_code_row["code_id"]},
             )
 
         db.commit()
