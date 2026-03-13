@@ -160,6 +160,7 @@ def generate_partner_code() -> str:
 
 class GeneratePartnerCodeRequest(BaseModel):
     expires_in_days: int = Field(default=7, ge=1, le=90)
+    org_id: int = None
 
 
 class RedeemPartnerCodeRequest(BaseModel):
@@ -699,13 +700,13 @@ def generate_partner_code_endpoint(
 
     db.execute(
         text("""
-            INSERT INTO partner_codes (code, expires_at)
-            VALUES (:code, :expires_at)
+            INSERT INTO partner_codes (code, expires_at, org_id)
+            VALUES (:code, :expires_at, :org_id)
         """),
-        {"code": code, "expires_at": expires_at},
+        {"code": code, "expires_at": expires_at, "org_id": payload.org_id},
     )
     db.commit()
-    return {"success": True, "code": code, "expires_at": expires_at.isoformat()}
+    return {"success": True, "code": code, "expires_at": expires_at.isoformat(), "org_id": payload.org_id}
 
 
 @app.get("/api/partner-codes/validate")
