@@ -1,5 +1,6 @@
 import pool from '@/lib/db';
 import EventsTable from '../components/EventsTable';
+import PartnerCodesAdmin from '../components/PartnerCodesAdmin';
 import { Box, Typography } from '@mui/material';
 import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
 
@@ -89,6 +90,9 @@ export default async function Dashboard() {
 				events={JSON.parse(JSON.stringify(events))}
 				organizations={JSON.parse(JSON.stringify(organizations))}
 			/>
+			<Box sx={{ mt: 4 }}>
+				<PartnerCodesAdmin />
+			</Box>
 		</Box>
 	);
 }
