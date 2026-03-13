@@ -2,6 +2,8 @@
 
 import { Box, Typography } from '@mui/material';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from '@changey/react-leaflet-markercluster';
+import '@changey/react-leaflet-markercluster/dist/styles.min.css';
 import L from 'leaflet';
 
 // Fix Leaflet's broken default icon in Next.js / webpack builds
@@ -103,41 +105,46 @@ export default function EventsMap({ events }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {mappable.map(event => {
-          const isExact = event.lat != null && event.lng != null;
-          const position = isExact
-            ? [event.lat, event.lng]
-            : SC_COUNTY_CENTROIDS[event.county];
-          const icon = isExact ? undefined : greyIcon;
+        <MarkerClusterGroup>
+          {mappable.map(event => {
+            const isExact = event.lat != null && event.lng != null;
+            const position = isExact
+              ? [event.lat, event.lng]
+              : SC_COUNTY_CENTROIDS[event.county];
+            const icon = isExact ? undefined : greyIcon;
+            const safeHref = event.hyperlink && /^https?:\/\//i.test(event.hyperlink)
+              ? event.hyperlink
+              : null;
 
-          return (
-            <Marker key={event.event_id} position={position} icon={icon}>
-              <Popup>
-                <strong>{event.title}</strong>
-                <br />
-                {formatDate(event.start_datetime)} &middot; {event.city}
-                <br />
-                {event.address}
-                {!isExact && (
-                  <>
-                    <br />
-                    <em style={{ fontSize: '0.8em', color: '#666' }}>
-                      Approximate location — pinned by county
-                    </em>
-                  </>
-                )}
-                {event.hyperlink && (
-                  <>
-                    <br />
-                    <a href={event.hyperlink} target="_blank" rel="noopener noreferrer">
-                      More Info →
-                    </a>
-                  </>
-                )}
-              </Popup>
-            </Marker>
-          );
-        })}
+            return (
+              <Marker key={event.event_id} position={position} icon={icon}>
+                <Popup>
+                  <strong>{event.title}</strong>
+                  <br />
+                  {formatDate(event.start_datetime)} &middot; {event.city}
+                  <br />
+                  {event.address}
+                  {!isExact && (
+                    <>
+                      <br />
+                      <em style={{ fontSize: '0.8em', color: '#666' }}>
+                        Approximate location — pinned by county
+                      </em>
+                    </>
+                  )}
+                  {safeHref && (
+                    <>
+                      <br />
+                      <a href={safeHref} target="_blank" rel="noopener noreferrer">
+                        More Info →
+                      </a>
+                    </>
+                  )}
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MarkerClusterGroup>
       </MapContainer>
     </Box>
   );

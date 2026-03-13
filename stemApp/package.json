@@ -12,6 +12,7 @@
     "db:seed": "node db/seed.js"
   },
   "dependencies": {
+    "@changey/react-leaflet-markercluster": "^4.0.0-rc1",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
