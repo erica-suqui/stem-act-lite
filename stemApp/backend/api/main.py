@@ -713,9 +713,11 @@ def generate_partner_code_endpoint(
 def validate_partner_code(code: str, db: Session = Depends(get_db)):
     row = db.execute(
         text("""
-            SELECT code_id, expires_at, consumed_at
-            FROM partner_codes
-            WHERE code = :code
+            SELECT pc.code_id, pc.expires_at, pc.consumed_at,
+                   pc.org_id, o.org_name
+            FROM partner_codes pc
+            LEFT JOIN organizations o ON o.org_id = pc.org_id
+            WHERE pc.code = :code
         """),
         {"code": code.upper().strip()},
     ).mappings().first()
@@ -727,7 +729,11 @@ def validate_partner_code(code: str, db: Session = Depends(get_db)):
     if row["expires_at"] < datetime.now(timezone.utc):
         return JSONResponse({"valid": False, "message": "This code has expired"}, status_code=410)
 
-    return {"valid": True}
+    return {
+        "valid": True,
+        "org_id": row["org_id"],
+        "org_name": row["org_name"],
+    }
 
 
 @app.get("/api/partner-codes")
