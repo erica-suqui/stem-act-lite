@@ -282,7 +282,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         code = payload.partnerCode.upper().strip()
         partner_code_row = db.execute(
             text("""
-                SELECT code_id, expires_at, consumed_at
+                SELECT code_id, expires_at, consumed_at, org_id
                 FROM partner_codes WHERE code = :code
             """),
             {"code": code},
@@ -302,39 +302,62 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         ).decode("utf-8")
         user_name = email.split("@")[0] if "@" in email else email
 
-        org_result = db.execute(
-            text(
-                """
-                INSERT INTO organizations (
-                    org_name,
-                    contact_first_name,
-                    contact_last_name,
-                    contact_email,
-                    contact_phone,
-                    status
-                )
-                VALUES (
-                    :org_name,
-                    :contact_first_name,
-                    :contact_last_name,
-                    :contact_email,
-                    :contact_phone,
-                    :status
-                )
-                RETURNING org_id
-                """
-            ),
-            {
-                "org_name": org_name,
-                "contact_first_name": first_name,
-                "contact_last_name": last_name,
-                "contact_email": email,
-                "contact_phone": phone,
-                "status": org_status,
-            },
-        )
-        org_row = org_result.mappings().first()
-        org_id = org_row["org_id"]
+        # If the partner code is linked to a pre-existing org, use it directly
+        if partner_code_row and partner_code_row["org_id"]:
+            org_id = partner_code_row["org_id"]
+            # Update the org's contact info with this partner's details (only if not yet set)
+            db.execute(
+                text("""
+                    UPDATE organizations
+                    SET contact_first_name = :first_name,
+                        contact_last_name  = :last_name,
+                        contact_email      = :email,
+                        contact_phone      = :phone
+                    WHERE org_id = :org_id
+                      AND contact_email = ''
+                """),
+                {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email,
+                    "phone": phone,
+                    "org_id": org_id,
+                },
+            )
+        else:
+            org_result = db.execute(
+                text(
+                    """
+                    INSERT INTO organizations (
+                        org_name,
+                        contact_first_name,
+                        contact_last_name,
+                        contact_email,
+                        contact_phone,
+                        status
+                    )
+                    VALUES (
+                        :org_name,
+                        :contact_first_name,
+                        :contact_last_name,
+                        :contact_email,
+                        :contact_phone,
+                        :status
+                    )
+                    RETURNING org_id
+                    """
+                ),
+                {
+                    "org_name": org_name,
+                    "contact_first_name": first_name,
+                    "contact_last_name": last_name,
+                    "contact_email": email,
+                    "contact_phone": phone,
+                    "status": org_status,
+                },
+            )
+            org_row = org_result.mappings().first()
+            org_id = org_row["org_id"]
 
         user_result = db.execute(
             text(
