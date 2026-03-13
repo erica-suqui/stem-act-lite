@@ -769,9 +769,12 @@ def list_partner_codes(db: Session = Depends(get_db)):
                 pc.expires_at,
                 pc.consumed_at,
                 pc.created_at,
-                o.org_name AS consumed_by_org
+                pc.org_id,
+                linked_org.org_name AS org_name,
+                consumed_org.org_name AS consumed_by_org
             FROM partner_codes pc
-            LEFT JOIN organizations o ON o.org_id = pc.consumed_by_org_id
+            LEFT JOIN organizations linked_org   ON linked_org.org_id   = pc.org_id
+            LEFT JOIN organizations consumed_org ON consumed_org.org_id = pc.consumed_by_org_id
             ORDER BY pc.created_at DESC
         """)
     ).mappings().all()
@@ -791,6 +794,8 @@ def list_partner_codes(db: Session = Depends(get_db)):
             "expires_at": r["expires_at"].isoformat(),
             "consumed_at": r["consumed_at"].isoformat() if r["consumed_at"] else None,
             "created_at": r["created_at"].isoformat(),
+            "org_id": r["org_id"],
+            "org_name": r["org_name"],
             "consumed_by_org": r["consumed_by_org"],
             "status": status,
         })
