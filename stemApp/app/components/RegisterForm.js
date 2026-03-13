@@ -6,9 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import EventSubmissionForm from '@/app/components/EventSubmissionForm';
+import {
+  Box, Card, CardContent, Typography, TextField,
+  Button, Alert, Stack, CircularProgress
+} from '@mui/material';
 
 export default function RegisterForm(){
-    //Form Data
     const [formData,setFormData] = useState ({
         firstName: '',
         lastName: '',
@@ -19,21 +22,20 @@ export default function RegisterForm(){
         phone: '',
     });
 
-    //Form Errors to raise Flags using Zod Library
     const [errors, setErrors] = useState({})
 
     const searchParams = useSearchParams();
     const inviteToken = searchParams.get('token');
 
-    const [tokenValid, setTokenValid] = useState(inviteToken ? null : true); // null=checking, true=valid, false=invalid
+    const [tokenValid, setTokenValid] = useState(inviteToken ? null : true);
     const [tokenError, setTokenError] = useState('');
 
     const [registered, setRegistered] = useState(false);
-    const [registeredUser, setRegisteredUser] = useState(null); // { org_id, user_id }
+    const [registeredUser, setRegisteredUser] = useState(null);
     const [addingEvents, setAddingEvents] = useState(false);
     const [eventsAdded, setEventsAdded] = useState(0);
     const [formKey, setFormKey] = useState(0);
-
+    const [submitError, setSubmitError] = useState('');
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -104,6 +106,7 @@ export default function RegisterForm(){
 
     const handleFormSubmit = async(e) => {
         e.preventDefault();
+        setSubmitError('');
         const userData = registerSchema.safeParse(formData)
         if (!userData.success){
                 setErrors(userData.error.format());
@@ -113,9 +116,7 @@ export default function RegisterForm(){
         try {
             const response = await fetch(apiUrl('/api/register'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...formData, inviteToken: inviteToken || null })
             });
            const data = await response.json();
@@ -124,129 +125,184 @@ export default function RegisterForm(){
                 setRegisteredUser({ org_id: data.org_id, user_id: data.user_id });
                 setRegistered(true);
             } else {
-                alert("Error: " + data.error);
-            }     
-        } 
+                setSubmitError(data.error || 'Registration failed');
+            }
+        }
         catch (error) {
             console.error("Error:", error);
-            alert("Something went wrong!");
+            setSubmitError('Something went wrong. Please try again.');
         }
-
-
     };
-    
+
     if (inviteToken && tokenValid === null) {
-        return <div className="register-form"><p>Verifying your invitation...</p></div>;
+        return (
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
+
     if (inviteToken && tokenValid === false) {
         return (
-            <div className="register-form">
-                <h3>Invitation Error</h3>
-                <p>{tokenError}</p>
-            </div>
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+                <Card elevation={4} sx={{ maxWidth: 420, width: '100%', p: 2 }}>
+                    <CardContent>
+                        <Typography variant="h6" color="error" gutterBottom>Invitation Error</Typography>
+                        <Alert severity="error">{tokenError}</Alert>
+                    </CardContent>
+                </Card>
+            </Box>
         );
     }
 
     if (registered && !addingEvents) {
         return (
-            <div className="register-form">
-                <h3>Registration successful!</h3>
-                <p>Would you like to submit an event now?</p>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                    <button onClick={() => setAddingEvents(true)}>Yes, submit an event</button>
-                    <button onClick={() => navigate.push('/partner')}>No, go to dashboard</button>
-                </div>
-            </div>
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+                <Card elevation={4} sx={{ maxWidth: 420, width: '100%', p: 2 }}>
+                    <CardContent>
+                        <Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
+                            Registration Successful!
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 3 }}>
+                            Would you like to submit an event now?
+                        </Typography>
+                        <Stack direction="row" spacing={2}>
+                            <Button variant="contained" onClick={() => setAddingEvents(true)}>
+                                Yes, submit an event
+                            </Button>
+                            <Button variant="outlined" onClick={() => navigate.push('/partner')}>
+                                No, go to dashboard
+                            </Button>
+                        </Stack>
+                    </CardContent>
+                </Card>
+            </Box>
         );
     }
 
     if (addingEvents) {
         return (
-            <div className="register-form">
-                <h3>Submit Event(s)</h3>
-                {eventsAdded > 0 && <p>{eventsAdded} event(s) added.</p>}
-                <EventSubmissionForm key={formKey} onSubmit={handleEventSubmit} submitLabel="Add Event" />
-                {eventsAdded > 0 && (
-                    <button onClick={() => navigate.push('/partner')} style={{ marginTop: '1rem' }}>
-                        Done — Go to Dashboard
-                    </button>
-                )}
-            </div>
+            <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2, py: 4 }}>
+                <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                    <Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
+                        Submit Event(s)
+                    </Typography>
+                    {eventsAdded > 0 && (
+                        <Alert severity="success" sx={{ mb: 2 }}>{eventsAdded} event(s) added.</Alert>
+                    )}
+                    <EventSubmissionForm key={formKey} onSubmit={handleEventSubmit} submitLabel="Add Event" />
+                    {eventsAdded > 0 && (
+                        <Button
+                            variant="contained"
+                            onClick={() => navigate.push('/partner')}
+                            sx={{ mt: 2 }}
+                        >
+                            Done — Go to Dashboard
+                        </Button>
+                    )}
+                </Box>
+            </Box>
         );
     }
 
     return (
-        <div className = "register-form">
-            <form className = "form-fields" onSubmit = {handleFormSubmit}>
-                <p>First Name:</p>
-                <input
-                type="text"
-                name="firstName"
-                placeholder="First Name"
-                value={formData.firstName}
-                onChange={handleChange}
-                />
-                {errors.firstName && <span>{errors.firstName._errors[0]}</span>}
-
-                <p>Last Name:</p>
-                <input
-                type="text"
-                name="lastName"
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChange={handleChange}
-                />
-                {errors.lastName && <span>{errors.lastName._errors[0]}</span>}
-                
-                <p >Organization Name:</p>
-                <input type = "text" 
-                id = "org"
-                name="orgName" 
-                placeholder="Your Orgnization Name"
-                value = {formData.orgName}
-                onChange={handleChange}
-                />
-                {errors.orgName && <span>{errors.orgName._errors[0]}</span>}
-
-                <p>Email: </p>
-                <input type = "email" 
-                name="email" 
-                placeholder="email@organizaiton.org"
-                value = {formData.email}
-                onChange={handleChange}
-                />
-                {errors.email && <span>{errors.email._errors[0]}</span>}
-
-                <p>Phone: </p>
-                <input type = "text" 
-                name="phone" 
-                placeholder="000-000-000"
-                value = {formData.phone}
-                onChange={handleChange}
-                />
-                {errors.phone && <span>{errors.phone._errors[0]}</span>}
-
-                <p>Password: </p>
-                <input type = "password" 
-                name="password" 
-                placeholder="Please Enter a Password"
-                value = {formData.password}
-                onChange={handleChange}
-                />
-                {errors.password && <span>{errors.password._errors[0]}</span>}
-                
-                <p>Confirm Password: </p>
-                <input type = "password" 
-                name="confirmPassword" 
-                placeholder="Please Confirm Your Password"
-                value = {formData.confirmPassword}
-                onChange={handleChange}
-                />
-                {errors.confirmPassword && <span>{errors.confirmPassword._errors[0]}</span>}
-                <button type = "submit" >Submit</button>
-
-
-            </form>
-        </div>
+        <Box sx={{
+            minHeight: '100vh', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', bgcolor: 'background.default', px: 2, py: 4,
+        }}>
+            <Card elevation={4} sx={{ width: '100%', maxWidth: 480, p: 2 }}>
+                <CardContent>
+                    <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+                        Partner Registration
+                    </Typography>
+                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+                        Create your organization account
+                    </Typography>
+                    <Box component="form" onSubmit={handleFormSubmit} noValidate>
+                        <Stack spacing={2}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <TextField
+                                    label="First Name"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                    error={Boolean(errors.firstName)}
+                                    helperText={errors.firstName?._errors?.[0]}
+                                />
+                                <TextField
+                                    label="Last Name"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                    error={Boolean(errors.lastName)}
+                                    helperText={errors.lastName?._errors?.[0]}
+                                />
+                            </Stack>
+                            <TextField
+                                label="Organization Name"
+                                name="orgName"
+                                value={formData.orgName}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.orgName)}
+                                helperText={errors.orgName?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.email)}
+                                helperText={errors.email?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Phone (10 digits)"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.phone)}
+                                helperText={errors.phone?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Password"
+                                name="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.password)}
+                                helperText={errors.password?._errors?.[0] || 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}
+                            />
+                            <TextField
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.confirmPassword)}
+                                helperText={errors.confirmPassword?._errors?.[0]}
+                            />
+                            {submitError && <Alert severity="error">{submitError}</Alert>}
+                            <Button type="submit" variant="contained" fullWidth size="large">
+                                Register
+                            </Button>
+                        </Stack>
+                    </Box>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }

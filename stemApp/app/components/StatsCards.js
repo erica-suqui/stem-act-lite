@@ -1,30 +1,44 @@
 'use client';
 
-export default function StatsCards({ stats, onFilter, activeFilter }) {
-	const cards = [
-		{ key: 'total',    filterValue: 'all',      className: 'stat-total',    label: 'Total' },
-		{ key: 'pending',  filterValue: 'pending',  className: 'stat-pending',  label: 'Pending' },
-		{ key: 'approved', filterValue: 'approved', className: 'stat-approved', label: 'Approved' },
-		{ key: 'denied',   filterValue: 'denied',   className: 'stat-denied',   label: 'Denied' },
-	];
+import { Grid, Card, CardActionArea, CardContent, Typography } from '@mui/material';
 
-	return (
-		<div className="stats-grid">
-			{cards.map(({ key, filterValue, className, label }) => {
-				const isActive = activeFilter === filterValue;
-				return (
-					<button
-						key={key}
-						className={`stat-card ${className}${isActive ? ' stat-card-active' : ''}`}
-						onClick={() => onFilter(filterValue)}
-						aria-pressed={isActive}
-						aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()} event${stats[key] !== 1 ? 's' : ''}`}
-					>
-						<span className="stat-number">{stats[key]}</span>
-						<span className="stat-label">{label}</span>
-					</button>
-				);
-			})}
-		</div>
-	);
+const CARDS = [
+  { key: 'total',    filterValue: 'all',      label: 'Total',    color: 'primary.dark' },
+  { key: 'pending',  filterValue: 'pending',  label: 'Pending',  color: 'warning.dark' },
+  { key: 'approved', filterValue: 'approved', label: 'Approved', color: 'success.dark' },
+  { key: 'denied',   filterValue: 'denied',   label: 'Denied',   color: 'error.dark' },
+];
+
+export default function StatsCards({ stats, onFilter, activeFilter }) {
+  return (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+      {CARDS.map(({ key, filterValue, label, color }) => {
+        const isActive = activeFilter === filterValue;
+        return (
+          <Grid item xs={6} sm={3} key={key}>
+            <Card
+              elevation={isActive ? 4 : 1}
+              sx={{ border: isActive ? 2 : 1, borderColor: isActive ? color : 'divider' }}
+            >
+              <CardActionArea
+                onClick={() => onFilter(filterValue)}
+                aria-pressed={isActive}
+                aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()} event${stats[key] !== 1 ? 's' : ''}`}
+                sx={{ p: 2, textAlign: 'center' }}
+              >
+                <CardContent sx={{ p: 0 }}>
+                  <Typography variant="h4" fontWeight={700} color={color}>
+                    {stats[key]}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {label}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
 }

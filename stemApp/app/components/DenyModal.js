@@ -1,50 +1,52 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Modal from './Modal';
+import {
+  Dialog, DialogTitle, DialogContent, DialogContentText,
+  DialogActions, Button, TextField
+} from '@mui/material';
 
 export default function DenyModal({ event, onDeny, onClose }) {
-	const [comment, setComment] = useState('');
-	const textareaRef = useRef(null);
+  const [comment, setComment] = useState('');
+  const textareaRef = useRef(null);
+  useEffect(() => { textareaRef.current?.focus(); }, []);
 
-	useEffect(() => { textareaRef.current?.focus(); }, []);
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!comment.trim()) return;
+    onDeny(comment);
+  }
 
-	function handleSubmit(e) {
-		e.preventDefault();
-		if (!comment.trim()) return;
-		onDeny(comment);
-	}
-
-	return (
-		<Modal headingId="deny-modal-heading" onClose={onClose}>
-			<h3 id="deny-modal-heading">Deny Event: {event.title}</h3>
-			<form onSubmit={handleSubmit}>
-				<label htmlFor="deny-comment">
-					Comment <span aria-hidden="true">(required)</span>:
-				</label>
-				<textarea
-					id="deny-comment"
-					ref={textareaRef}
-					value={comment}
-					onChange={e => setComment(e.target.value)}
-					rows={4}
-					required
-					aria-required="true"
-					aria-describedby="deny-comment-hint"
-					placeholder="Explain why this event is being denied..."
-				/>
-				<p id="deny-comment-hint" className="field-hint">
-					This comment will be sent to the partner organization.
-				</p>
-				<div className="modal-actions">
-					<button type="button" className="btn btn-cancel" onClick={onClose}>
-						Cancel
-					</button>
-					<button type="submit" className="btn btn-deny">
-						Deny Event
-					</button>
-				</div>
-			</form>
-		</Modal>
-	);
+  return (
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Deny Event: {event.title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ mb: 2 }}>
+          This comment will be visible to the partner organization.
+        </DialogContentText>
+        <TextField
+          inputRef={textareaRef}
+          label="Comment (required)"
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          multiline
+          rows={4}
+          fullWidth
+          required
+          placeholder="Explain why this event is being denied..."
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          variant="contained"
+          color="error"
+          disabled={!comment.trim()}
+          onClick={handleSubmit}
+        >
+          Deny Event
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
