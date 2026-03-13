@@ -4,7 +4,6 @@ import React, { useState, useCallback, useMemo } from 'react';
 import DenyModal from './DenyModal';
 import ApproveModal from './ApproveModal';
 import RevokeModal from './RevokeModal';
-import StatsCards from './StatsCards';
 import Toast from './Toast';
 import EventSubmissionForm from './EventSubmissionForm';
 import { useToast } from '@/hooks/useToast';
@@ -12,16 +11,12 @@ import { formatDate, formatCost, formatTimeRange } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import {
   Box, Stack, Tabs, Tab, TextField, Select, MenuItem, FormControl,
-  InputLabel, Typography, Badge, Chip, Button, Collapse,
+  InputLabel, Typography, Chip, Button, Collapse,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogTitle, DialogContent,
 } from '@mui/material';
-
-const STATUS_CHIP = {
-  pending:  { label: 'Pending',  color: 'warning' },
-  approved: { label: 'Approved', color: 'success' },
-  denied:   { label: 'Denied',   color: 'error'   },
-};
+import SearchIcon from '@mui/icons-material/Search';
+import InputAdornment from '@mui/material/InputAdornment';
 
 export default function EventsTable({ events: initialEvents, organizations }) {
   const [events, setEvents]               = useState(initialEvents);
@@ -45,14 +40,14 @@ export default function EventsTable({ events: initialEvents, organizations }) {
   const partnerPending = useMemo(() => partnerEvents.filter(e => e.status === 'pending').length, [partnerEvents]);
   const viewerPending  = useMemo(() => viewerEvents.filter(e => e.status === 'pending').length, [viewerEvents]);
 
-  const stats = useMemo(() => ({
-    pending:  events.filter(e => e.status === 'pending').length,
-    approved: events.filter(e => e.status === 'approved').length,
-    denied:   events.filter(e => e.status === 'denied').length,
-    total:    events.length,
-  }), [events]);
-
   const tabEvents = isPartnerTab ? partnerEvents : viewerEvents;
+
+  const tabCounts = useMemo(() => ({
+    all:      tabEvents.length,
+    pending:  tabEvents.filter(e => e.status === 'pending').length,
+    approved: tabEvents.filter(e => e.status === 'approved').length,
+    denied:   tabEvents.filter(e => e.status === 'denied').length,
+  }), [tabEvents]);
 
   const filtered = tabEvents.filter(e => {
     const matchStatus = statusFilter === 'all' || e.status === statusFilter;
@@ -171,58 +166,82 @@ export default function EventsTable({ events: initialEvents, organizations }) {
     }
   }, [addToast]);
 
+  const STATUS_PILLS = [
+    { key: 'all',      label: 'All',      color: 'default' },
+    { key: 'pending',  label: 'Pending',  color: 'warning' },
+    { key: 'approved', label: 'Approved', color: 'success' },
+    { key: 'denied',   label: 'Denied',   color: 'error'   },
+  ];
+
   return (
     <>
-      <StatsCards stats={stats} onFilter={setStatusFilter} activeFilter={statusFilter} />
+      {/* Header */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography variant="h6" fontWeight={700}>Event Submissions</Typography>
+          <Chip
+            label={`${events.length} total`}
+            size="small"
+            sx={{ borderRadius: 1, fontWeight: 500 }}
+          />
+        </Stack>
+        <Button variant="contained" size="small" onClick={() => setAddEventOpen(true)}>
+          + Add Event
+        </Button>
+      </Stack>
 
+      {/* Status pill filters */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+        {STATUS_PILLS.map(({ key, label, color }) => {
+          const active = statusFilter === key;
+          return (
+            <Chip
+              key={key}
+              label={`${label} ${tabCounts[key]}`}
+              color={active ? color : 'default'}
+              variant={active ? 'filled' : 'outlined'}
+              onClick={() => setStatusFilter(key)}
+              clickable
+              size="small"
+              sx={{ borderRadius: 4, fontWeight: active ? 600 : 400, px: 0.5 }}
+            />
+          );
+        })}
+      </Stack>
+
+      {/* Partner / Viewer tabs */}
       <Tabs value={activeTab} onChange={switchTab} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab
           label={
-            <Badge badgeContent={activeTab === 1 ? partnerPending : 0} color="warning" sx={{ pr: partnerPending && activeTab === 1 ? 2 : 0 }}>
+            <Box component="span">
               Partner Events
-            </Badge>
+              {partnerPending > 0 && activeTab === 1 && (
+                <Chip label={partnerPending} color="warning" size="small" sx={{ ml: 1, height: 18, fontSize: 11 }} />
+              )}
+            </Box>
           }
         />
         <Tab
           label={
-            <Badge badgeContent={activeTab === 0 ? viewerPending : 0} color="warning" sx={{ pr: viewerPending && activeTab === 0 ? 2 : 0 }}>
+            <Box component="span">
               Viewer Events
-            </Badge>
+              {viewerPending > 0 && activeTab === 0 && (
+                <Chip label={viewerPending} color="warning" size="small" sx={{ ml: 1, height: 18, fontSize: 11 }} />
+              )}
+            </Box>
           }
         />
       </Tabs>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
-        <TextField
-          size="small"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Filter by title or tag…"
-          label="Search"
-          sx={{ minWidth: 200 }}
-          inputProps={{ 'aria-label': 'Search events by title or tag' }}
-        />
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel id="status-filter-label">Status</InputLabel>
-          <Select
-            labelId="status-filter-label"
-            value={statusFilter}
-            label="Status"
-            onChange={e => setStatusFilter(e.target.value)}
-          >
-            <MenuItem value="all">All statuses</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="approved">Approved</MenuItem>
-            <MenuItem value="denied">Denied</MenuItem>
-          </Select>
-        </FormControl>
+      {/* Filter row */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
         {isPartnerTab && (
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="org-filter-label">Organization</InputLabel>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="org-filter-label">All organizations</InputLabel>
             <Select
               labelId="org-filter-label"
               value={orgFilter}
-              label="Organization"
+              label="All organizations"
               onChange={e => setOrgFilter(e.target.value)}
             >
               <MenuItem value="all">All organizations</MenuItem>
@@ -234,113 +253,173 @@ export default function EventsTable({ events: initialEvents, organizations }) {
             </Select>
           </FormControl>
         )}
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
+        <Box sx={{ flex: 1 }} />
+        <Typography variant="body2" color="text.secondary" aria-live="polite">
           {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
         </Typography>
-        <Button variant="contained" size="small" onClick={() => setAddEventOpen(true)}>
-          + Add Event
-        </Button>
+        <TextField
+          size="small"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Filter by title or tag…"
+          sx={{ minWidth: 220 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            },
+            htmlInput: { 'aria-label': 'Search events by title or tag' },
+          }}
+        />
       </Stack>
 
-      <TableContainer component={Paper} elevation={1}>
+      {/* Table */}
+      <TableContainer component={Paper} elevation={0} variant="outlined">
         <Table size="small" aria-label={`${isPartnerTab ? 'Partner' : 'Viewer'} event submissions`}>
           <TableHead>
-            <TableRow sx={{ bgcolor: 'primary.dark' }}>
-              {['Event Title', isPartnerTab ? 'Organization' : 'Submitted By', 'Date', 'Time', 'Location', 'Audience', 'Tags', 'Cost', 'Status', 'Submitted', 'Actions'].map(h => (
-                <TableCell key={h} sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</TableCell>
+            <TableRow sx={{ bgcolor: 'grey.50' }}>
+              {['EVENT', 'DATE & TIME', 'LOCATION', 'AUDIENCE', 'COST', 'SUBMITTED', 'ACTIONS'].map(h => (
+                <TableCell
+                  key={h}
+                  sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.secondary', letterSpacing: 0.5, whiteSpace: 'nowrap', py: 1.25 }}
+                >
+                  {h}
+                </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {filtered.map(event => {
               const isLoading  = loadingId === event.event_id;
-              const chipProps  = STATUS_CHIP[event.status] ?? { label: event.status, color: 'default' };
               const isExpanded = expandedId === event.event_id;
+              const subtitle   = isPartnerTab
+                ? `${event.org_name ?? '—'} · Partner`
+                : (event.submitter_name ?? 'Public');
+
               return (
                 <React.Fragment key={event.event_id}>
-                  <TableRow hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>{event.title}</Typography>
+                  <TableRow hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                    {/* EVENT */}
+                    <TableCell sx={{ maxWidth: 220 }}>
+                      <Typography variant="body2" fontWeight={600} noWrap>{event.title}</Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>{subtitle}</Typography>
                       {event.hyperlink && (
-                        <Typography variant="caption">
+                        <Typography variant="caption" display="block">
                           <a href={event.hyperlink} target="_blank" rel="noopener noreferrer"
-                            aria-label={`${event.title} — external event link`}>
+                            aria-label={`${event.title} — external link`}>
                             Event Link
                           </a>
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {isPartnerTab ? event.org_name : (event.submitter_name ?? <em>Unknown</em>)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">{event.event_contact}</Typography>
-                    </TableCell>
+
+                    {/* DATE & TIME */}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <Typography variant="body2">{formatDate(event.start_datetime)}</Typography>
-                      {event.end_datetime && formatDate(event.end_datetime) !== formatDate(event.start_datetime) && (
-                        <Typography variant="caption" color="text.secondary">to {formatDate(event.end_datetime)}</Typography>
-                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {formatTimeRange(event.start_datetime, event.end_datetime)}
+                      </Typography>
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Typography variant="body2">{formatTimeRange(event.start_datetime, event.end_datetime)}</Typography>
-                    </TableCell>
+
+                    {/* LOCATION */}
                     <TableCell>
                       <Typography variant="body2">{event.city}, {event.county}</Typography>
                       <Typography variant="caption" color="text.secondary">{event.address}</Typography>
                     </TableCell>
-                    <TableCell><Typography variant="body2">{event.audience}</Typography></TableCell>
+
+                    {/* AUDIENCE */}
                     <TableCell>
-                      <Typography variant="body2">{event.tag_names?.length ? event.tag_names.join(', ') : '—'}</Typography>
+                      <Typography variant="body2">{event.audience || '—'}</Typography>
                     </TableCell>
-                    <TableCell><Typography variant="body2">{formatCost(event.cost)}</Typography></TableCell>
-                    <TableCell>
-                      <Chip label={chipProps.label} color={chipProps.color} size="small" />
+
+                    {/* COST */}
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      <Typography variant="body2">{formatCost(event.cost)}</Typography>
                     </TableCell>
+
+                    {/* SUBMITTED */}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <Typography variant="body2">{formatDate(event.created_at)}</Typography>
                     </TableCell>
+
+                    {/* ACTIONS */}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Stack direction="row" spacing={0.5}>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
                         {event.status === 'pending' && (
                           <>
-                            <Button size="small" variant="contained" color="success" disabled={isLoading}
-                              onClick={() => setApproveTarget(event)} aria-label={`Approve: ${event.title}`}>
+                            <Button
+                              size="small" variant="contained" color="success"
+                              disabled={isLoading}
+                              onClick={() => setApproveTarget(event)}
+                              sx={{ borderRadius: 1, minWidth: 0, px: 1.5, py: 0.4, fontSize: '0.75rem' }}
+                              aria-label={`Approve: ${event.title}`}
+                            >
                               Approve
                             </Button>
-                            <Button size="small" variant="contained" color="error" disabled={isLoading}
-                              onClick={() => setDenyTarget(event)} aria-label={`Deny: ${event.title}`}>
+                            <Button
+                              size="small" variant="outlined" color="error"
+                              disabled={isLoading}
+                              onClick={() => setDenyTarget(event)}
+                              sx={{ borderRadius: 1, minWidth: 0, px: 1.5, py: 0.4, fontSize: '0.75rem' }}
+                              aria-label={`Deny: ${event.title}`}
+                            >
                               Deny
                             </Button>
                           </>
                         )}
                         {event.status === 'approved' && (
-                          <Button size="small" variant="outlined" color="error" disabled={isLoading}
-                            onClick={() => setRevokeTarget(event)} aria-label={`Revoke: ${event.title}`}>
+                          <Button
+                            size="small" variant="outlined" color="warning"
+                            disabled={isLoading}
+                            onClick={() => setRevokeTarget(event)}
+                            sx={{ borderRadius: 1, minWidth: 0, px: 1.5, py: 0.4, fontSize: '0.75rem' }}
+                            aria-label={`Revoke: ${event.title}`}
+                          >
                             Revoke
                           </Button>
                         )}
                         {event.status === 'denied' && (
-                          <Button size="small" variant="contained" color="success" disabled={isLoading}
-                            onClick={() => setApproveTarget(event)} aria-label={`Approve: ${event.title}`}>
+                          <Button
+                            size="small" variant="contained" color="success"
+                            disabled={isLoading}
+                            onClick={() => setApproveTarget(event)}
+                            sx={{ borderRadius: 1, minWidth: 0, px: 1.5, py: 0.4, fontSize: '0.75rem' }}
+                            aria-label={`Approve: ${event.title}`}
+                          >
                             Approve
                           </Button>
                         )}
-                        <Button size="small" variant="text"
+                        <Button
+                          size="small" variant="text" color="inherit"
                           onClick={() => setExpandedId(isExpanded ? null : event.event_id)}
-                          aria-expanded={isExpanded} aria-label={`${isExpanded ? 'Hide' : 'Show'} details: ${event.title}`}>
+                          sx={{ minWidth: 0, px: 1, fontSize: '0.75rem', color: 'text.secondary' }}
+                          aria-expanded={isExpanded}
+                          aria-label={`${isExpanded ? 'Hide' : 'Show'} details: ${event.title}`}
+                        >
                           {isExpanded ? 'Hide' : 'Details'}
                         </Button>
                       </Stack>
                     </TableCell>
                   </TableRow>
+
+                  {/* Expanded detail row */}
                   {isExpanded && (
                     <TableRow>
-                      <TableCell colSpan={11} sx={{ pb: 0, pt: 0 }}>
+                      <TableCell colSpan={7} sx={{ pb: 0, pt: 0 }}>
                         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                           <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
                             <Typography variant="subtitle2" fontWeight={600} gutterBottom>Description</Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}>{event.description}</Typography>
+                            {event.tag_names?.length > 0 && (
+                              <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mb: 1 }}>
+                                {event.tag_names.map(t => (
+                                  <Chip key={t} label={t} size="small" variant="outlined" />
+                                ))}
+                              </Stack>
+                            )}
                             {event.admin_comment && (
                               <>
                                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>Admin Comment</Typography>
@@ -355,9 +434,10 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                 </React.Fragment>
               );
             })}
+
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                   <Typography color="text.secondary">
                     No {isPartnerTab ? 'partner' : 'viewer'} events match the selected filters.
                   </Typography>
