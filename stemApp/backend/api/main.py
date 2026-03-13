@@ -593,3 +593,24 @@ def generate_partner_code_endpoint(
     )
     db.commit()
     return {"success": True, "code": code, "expires_at": expires_at.isoformat()}
+
+
+@app.get("/api/partner-codes/validate")
+def validate_partner_code(code: str, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("""
+            SELECT code_id, expires_at, consumed_at
+            FROM partner_codes
+            WHERE code = :code
+        """),
+        {"code": code.upper().strip()},
+    ).mappings().first()
+
+    if row is None:
+        return JSONResponse({"valid": False, "message": "Invalid code"}, status_code=404)
+    if row["consumed_at"] is not None:
+        return JSONResponse({"valid": False, "message": "This code has already been used"}, status_code=410)
+    if row["expires_at"] < datetime.now(timezone.utc):
+        return JSONResponse({"valid": False, "message": "This code has expired"}, status_code=410)
+
+    return {"valid": True}
