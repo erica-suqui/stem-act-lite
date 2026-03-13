@@ -703,3 +703,59 @@ def revoke_partner_code(code_id: int, db: Session = Depends(get_db)):
     )
     db.commit()
     return {"success": True}
+
+
+@app.post("/api/partner-codes/redeem")
+def redeem_partner_code(payload: RedeemPartnerCodeRequest, db: Session = Depends(get_db)):
+    code = payload.code.upper().strip()
+
+    row = db.execute(
+        text("""
+            SELECT code_id, expires_at, consumed_at
+            FROM partner_codes WHERE code = :code
+        """),
+        {"code": code},
+    ).mappings().first()
+
+    if row is None:
+        return JSONResponse({"success": False, "error": "Invalid code"}, status_code=404)
+    if row["consumed_at"] is not None:
+        return JSONResponse({"success": False, "error": "This code has already been used"}, status_code=410)
+    if row["expires_at"] < datetime.now(timezone.utc):
+        return JSONResponse({"success": False, "error": "This code has expired"}, status_code=410)
+
+    org = db.execute(
+        text("SELECT org_id, status FROM organizations WHERE org_id = :org_id"),
+        {"org_id": payload.org_id},
+    ).mappings().first()
+
+    if org is None:
+        return JSONResponse({"success": False, "error": "Organization not found"}, status_code=404)
+    if org["status"] == OrganizationStatus.active.value:
+        return JSONResponse({"success": False, "error": "Organization is already active"}, status_code=400)
+
+    db.execute(
+        text("UPDATE organizations SET status = :status WHERE org_id = :org_id"),
+        {"status": OrganizationStatus.active.value, "org_id": payload.org_id},
+    )
+    db.execute(
+        text("""
+            UPDATE partner_codes
+            SET consumed_at = now(), consumed_by_org_id = :org_id
+            WHERE code_id = :code_id
+        """),
+        {"org_id": payload.org_id, "code_id": row["code_id"]},
+    )
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/api/organizations/{org_id}")
+def get_organization(org_id: int, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("SELECT org_id, org_name, status FROM organizations WHERE org_id = :id"),
+        {"id": org_id},
+    ).mappings().first()
+    if row is None:
+        return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
+    return {"success": True, "organization": dict(row)}
