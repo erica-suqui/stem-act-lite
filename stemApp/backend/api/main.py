@@ -4,8 +4,10 @@ import secrets
 import string
 from enum import Enum
 import bcrypt
+import httpx
+import logging
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -13,6 +15,8 @@ from sqlalchemy import text
 from pydantic import BaseModel, Field
 
 from .database import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="STEM-ACT Backend")
 
@@ -36,6 +40,42 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def _geocode_event(event_id: int, address: str, city: str):
+    """
+    Called as a FastAPI BackgroundTask after event approval.
+    Calls Nominatim to get lat/lng. Stores result in DB.
+    Never raises — geocoding failure is non-fatal.
+    """
+    query = f"{address}, {city}, SC, USA"
+    try:
+        resp = httpx.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": query, "format": "json", "limit": 1, "countrycodes": "us"},
+            headers={"User-Agent": "STEM-ACT-EventMap/1.0 (stemact.org)"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        results = resp.json()
+        if results:
+            lat = float(results[0]["lat"])
+            lng = float(results[0]["lon"])
+            with SessionLocal() as bg_db:
+                bg_db.execute(
+                    text("""
+                        UPDATE events
+                        SET lat = :lat, lng = :lng, geocoded_at = now()
+                        WHERE event_id = :event_id
+                    """),
+                    {"lat": lat, "lng": lng, "event_id": event_id},
+                )
+                bg_db.commit()
+            logger.info(f"Geocoded event {event_id}: ({lat}, {lng})")
+        else:
+            logger.warning(f"Nominatim returned no results for event {event_id}: {query!r}")
+    except Exception as exc:
+        logger.error(f"Geocoding failed for event {event_id}: {exc}")
 
 
 @app.get("/health")
@@ -430,23 +470,30 @@ def validate_invitation(token: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/events/{event_id}/approve")
-def approve_event(event_id: int, db: Session = Depends(get_db)):
-    result = db.execute(
-        text(
-            """
+def approve_event(event_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Fetch address fields before approving (needed for geocoding)
+    event_row = db.execute(
+        text("SELECT address, city FROM events WHERE event_id = :event_id"),
+        {"event_id": event_id},
+    ).mappings().first()
+
+    if event_row is None:
+        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+
+    db.execute(
+        text("""
             UPDATE events
             SET status = :status, admin_comment = NULL, reviewed_at = now()
             WHERE event_id = :event_id
-            RETURNING event_id
-            """
-        ),
+        """),
         {"status": EventStatus.approved.value, "event_id": event_id},
     )
-    row = result.first()
     db.commit()
 
-    if row is None:
-        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+    # Geocode asynchronously — never blocks or fails the approval
+    background_tasks.add_task(
+        _geocode_event, event_id, event_row["address"], event_row["city"]
+    )
 
     return {"success": True}
 
