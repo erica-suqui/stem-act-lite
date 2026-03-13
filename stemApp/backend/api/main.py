@@ -354,7 +354,8 @@ def list_events(org_id: int = None, status: str = None, db: Session = Depends(ge
     result = db.execute(text(f"""
         SELECT event_id, org_id, submitter_name, submitter_email, title, description,
                start_datetime, end_datetime, address, city, county, audience, cost,
-               hyperlink, event_contact, status, admin_comment, created_at
+               hyperlink, event_contact, status, admin_comment, created_at,
+               lat, lng, geocoded_at
         FROM events {where} ORDER BY created_at DESC
     """), params)
     events = [dict(row) for row in result.mappings().all()]
