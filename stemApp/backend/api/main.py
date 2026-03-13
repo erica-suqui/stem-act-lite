@@ -564,3 +564,32 @@ def invite_user(payload: InviteUserRequest, db: Session = Depends(get_db)):
         "inviteLink": invite_link,
         "expiresAt": expires_at.isoformat(),
     }
+
+
+@app.post("/api/partner-codes/generate")
+def generate_partner_code_endpoint(
+    payload: GeneratePartnerCodeRequest,
+    db: Session = Depends(get_db),
+):
+    expires_at = datetime.now(timezone.utc) + timedelta(days=payload.expires_in_days)
+    # Retry up to 5 times in case of collision (extremely unlikely)
+    for _ in range(5):
+        code = generate_partner_code()
+        existing = db.execute(
+            text("SELECT code_id FROM partner_codes WHERE code = :code"),
+            {"code": code},
+        ).first()
+        if existing is None:
+            break
+    else:
+        return JSONResponse({"success": False, "error": "Could not generate unique code"}, status_code=500)
+
+    db.execute(
+        text("""
+            INSERT INTO partner_codes (code, expires_at)
+            VALUES (:code, :expires_at)
+        """),
+        {"code": code, "expires_at": expires_at},
+    )
+    db.commit()
+    return {"success": True, "code": code, "expires_at": expires_at.isoformat()}
