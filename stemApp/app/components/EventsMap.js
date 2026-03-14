@@ -48,16 +48,19 @@ export default function EventsMap({ events }) {
     return e.county in CT_COUNTY_CENTROIDS;
   });
 
-  if (mappable.length === 0) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography color="text.secondary">No events to display on the map.</Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ height: { xs: 300, md: 500 }, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
+    <Box sx={{ height: { xs: 300, md: 500 }, width: '100%', borderRadius: 1, overflow: 'hidden', position: 'relative' }}>
+      {mappable.length === 0 && (
+        <Box sx={{
+          position: 'absolute', inset: 0, zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <Box sx={{ bgcolor: 'rgba(255,255,255,0.85)', px: 2, py: 1, borderRadius: 1 }}>
+            <Typography color="text.secondary">No events match the current filters.</Typography>
+          </Box>
+        </Box>
+      )}
       <MapContainer
         center={[41.6, -72.7]}
         zoom={9}
