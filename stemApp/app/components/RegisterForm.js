@@ -250,6 +250,9 @@ export default function RegisterForm(){
         }}>
             <Card elevation={4} sx={{ width: '100%', maxWidth: 480, p: 2 }}>
                 <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                        <Button size="small" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
+                    </Box>
                     <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
                         Partner Registration
                     </Typography>

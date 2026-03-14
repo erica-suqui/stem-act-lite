@@ -18,16 +18,34 @@ export default async function HomePage() {
   const events = await getApprovedEvents();
   return (
     <Box>
-      <Box sx={{ bgcolor: 'primary.dark', color: 'white', py: 5, px: 3, textAlign: 'center', position: 'relative' }}>
-        <Stack direction="row" justifyContent="flex-end" sx={{ position: 'absolute', top: 16, right: 16 }}>
-          <Button component={Link} href="/login" variant="outlined" size="small"
-            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', mr: 1, '&:hover': { borderColor: 'white' } }}>
-            Sign In
-          </Button>
-          <Button component={Link} href="/register" variant="contained" size="small"
-            sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' } }}>
-            Sign Up
-          </Button>
+      <Box sx={{ bgcolor: 'primary.dark', color: 'white', pt: '8px', pb: 2, px: 3, textAlign: 'center', position: 'relative' }}>
+        <Stack direction="row" sx={{ position: 'absolute', top: 8, left: 16 }} spacing={1}>
+          <Link href="/submit" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Submit an Event
+            </Button>
+          </Link>
+          <Link href="/register" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Become a Partner
+            </Button>
+          </Link>
+        </Stack>
+        <Stack direction="row" sx={{ position: 'absolute', top: 8, right: 16 }} spacing={1}>
+          <Link href="/login" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/register" style={{ textDecoration: 'none' }}>
+            <Button variant="contained" size="small"
+              sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' } }}>
+              Sign Up
+            </Button>
+          </Link>
         </Stack>
         <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
           STEM Events in Connecticut

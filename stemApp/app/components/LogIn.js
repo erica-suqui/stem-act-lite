@@ -100,7 +100,7 @@ export default function LogIn(){
               Sign In
             </Typography>
             <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
-              STEM-ACT Admin &amp; Partner Portal
+              STEM-ACT
             </Typography>
             {justReset && (
               <Alert severity="success" sx={{ mb: 2 }}>

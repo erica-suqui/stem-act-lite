@@ -1,7 +1,6 @@
 import pool from '@/lib/db';
 import EventsTable from '../components/EventsTable';
-import SignOutButton from '../components/SignOutButton';
-import { Box, Stack, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
 
 export const dynamic = 'force-dynamic';
@@ -83,12 +82,6 @@ export default async function Dashboard() {
 
 	return (
 		<Box sx={{ p: 3 }}>
-			<Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-				<Typography variant="h5" fontWeight={700} color="primary.dark">
-					Event Submissions
-				</Typography>
-				<SignOutButton />
-			</Stack>
 			<EventsTable
 				events={JSON.parse(JSON.stringify(events))}
 				organizations={JSON.parse(JSON.stringify(organizations))}
