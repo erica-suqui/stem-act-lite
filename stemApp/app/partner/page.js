@@ -6,16 +6,20 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogContent,
   DialogTitle,
+  Divider,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import { apiUrl } from '@/lib/api';
@@ -118,6 +122,48 @@ export default function PartnerDashboard() {
 
   const canEdit = (event) => event.status === 'pending' || event.status === 'denied';
 
+  const [commentThreads, setCommentThreads] = useState({});
+  const [commentInputs, setCommentInputs]   = useState({});
+  const [expandedComments, setExpandedComments] = useState({});
+  const [sendingComment, setSendingComment] = useState(null);
+
+  const fetchComments = useCallback(async (eventId) => {
+    const res = await fetch(apiUrl(`/api/events/${eventId}/comments`));
+    if (!res.ok) return;
+    const data = await res.json();
+    setCommentThreads(prev => ({ ...prev, [eventId]: data.comments }));
+  }, []);
+
+  const toggleComments = async (eventId) => {
+    const isOpen = expandedComments[eventId];
+    setExpandedComments(prev => ({ ...prev, [eventId]: !isOpen }));
+    if (!isOpen && !commentThreads[eventId]) {
+      await fetchComments(eventId);
+    }
+  };
+
+  const handleSendComment = async (eventId) => {
+    const body = (commentInputs[eventId] || '').trim();
+    if (!body) return;
+    setSendingComment(eventId);
+    try {
+      const res = await fetch(apiUrl(`/api/events/${eventId}/comments`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, author_role: 'partner' }),
+      });
+      if (res.ok) {
+        setCommentInputs(prev => ({ ...prev, [eventId]: '' }));
+        await fetchComments(eventId);
+        addToast('Reply sent.', 'success');
+      } else {
+        addToast('Failed to send reply.', 'error');
+      }
+    } finally {
+      setSendingComment(null);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Toast toasts={toasts} onDismiss={dismissToast} />
@@ -151,33 +197,85 @@ export default function PartnerDashboard() {
               {events.map((event) => {
                 const statusCfg = STATUS_CONFIG[event.status] || { color: 'default', label: event.status };
                 return (
-                  <TableRow key={event.event_id}>
-                    <TableCell>{event.title}</TableCell>
-                    <TableCell>
-                      {event.start_datetime
-                        ? new Date(event.start_datetime).toLocaleString()
-                        : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={statusCfg.label}
-                        color={statusCfg.color}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{event.admin_comment || '—'}</TableCell>
-                    <TableCell>
-                      {canEdit(event) && (
-                        <Button
-                          variant="outlined"
+                  <>
+                    <TableRow key={event.event_id}>
+                      <TableCell>{event.title}</TableCell>
+                      <TableCell>
+                        {event.start_datetime
+                          ? new Date(event.start_datetime).toLocaleString()
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={statusCfg.label}
+                          color={statusCfg.color}
                           size="small"
-                          onClick={() => setEditEvent(event)}
+                        />
+                      </TableCell>
+                      <TableCell>{event.admin_comment || '—'}</TableCell>
+                      <TableCell>
+                        {canEdit(event) && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => setEditEvent(event)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        <Button
+                          size="small"
+                          variant="text"
+                          sx={{ ml: 1 }}
+                          onClick={() => toggleComments(event.event_id)}
                         >
-                          Edit
+                          {expandedComments[event.event_id] ? 'Hide Thread' : 'Comments'}
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                    </TableRow>
+                    {expandedComments[event.event_id] && (
+                      <TableRow>
+                        <TableCell colSpan={5} sx={{ pt: 0, pb: 1, bgcolor: 'grey.50' }}>
+                          <Collapse in={expandedComments[event.event_id]}>
+                            <Box sx={{ p: 1.5 }}>
+                              {(commentThreads[event.event_id] || []).length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">No comments yet.</Typography>
+                              ) : (
+                                (commentThreads[event.event_id] || []).map(c => (
+                                  <Box key={c.comment_id} sx={{ mb: 1, p: 1, bgcolor: c.author_role === 'admin' ? 'primary.50' : 'white', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                                    <Typography variant="caption" fontWeight={600} color={c.author_role === 'admin' ? 'primary.dark' : 'text.primary'}>
+                                      {c.author_role === 'admin' ? 'Admin' : 'You'}
+                                    </Typography>
+                                    <Typography variant="body2">{c.body}</Typography>
+                                  </Box>
+                                ))
+                              )}
+                              <Divider sx={{ my: 1 }} />
+                              <Stack direction="row" spacing={1} alignItems="flex-end">
+                                <TextField
+                                  size="small"
+                                  multiline
+                                  rows={2}
+                                  fullWidth
+                                  placeholder="Reply to admin..."
+                                  value={commentInputs[event.event_id] || ''}
+                                  onChange={e => setCommentInputs(prev => ({ ...prev, [event.event_id]: e.target.value }))}
+                                />
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  disabled={sendingComment === event.event_id || !commentInputs[event.event_id]?.trim()}
+                                  onClick={() => handleSendComment(event.event_id)}
+                                >
+                                  Send
+                                </Button>
+                              </Stack>
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 );
               })}
             </TableBody>
