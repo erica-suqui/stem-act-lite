@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
-import EventSubmissionForm from '@/app/components/EventSubmissionForm';
 import {
   Box, Card, CardContent, Typography, TextField,
   Button, Alert, Stack, CircularProgress
@@ -31,11 +30,6 @@ export default function RegisterForm(){
     const [tokenValid, setTokenValid] = useState(inviteToken ? null : true);
     const [tokenError, setTokenError] = useState('');
 
-    const [registered, setRegistered] = useState(false);
-    const [registeredUser, setRegisteredUser] = useState(null);
-    const [addingEvents, setAddingEvents] = useState(false);
-    const [eventsAdded, setEventsAdded] = useState(0);
-    const [formKey, setFormKey] = useState(0);
     const [submitError, setSubmitError] = useState('');
     const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
     const [codeMessage, setCodeMessage] = useState('');
@@ -76,25 +70,6 @@ export default function RegisterForm(){
     }, [inviteToken]);
 
     const navigate = useRouter();
-
-    const handleEventSubmit = useCallback(async (formData) => {
-        if (!registeredUser) return { success: false, message: 'Session error' };
-        const res = await fetch(apiUrl('/api/events'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...formData,
-                org_id: registeredUser.org_id,
-                submitted_by_user_id: registeredUser.user_id,
-            }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            setEventsAdded(prev => prev + 1);
-            setFormKey(prev => prev + 1);
-        }
-        return data;
-    }, [registeredUser]);
 
     const handleCodeBlur = async () => {
         const code = formData.partnerCode.trim();
@@ -160,8 +135,7 @@ export default function RegisterForm(){
            const data = await response.json();
 
             if (data.success) {
-                setRegisteredUser({ org_id: data.org_id, user_id: data.user_id });
-                setRegistered(true);
+                navigate.push('/partner');
             } else {
                 setSubmitError(data.error || 'Registration failed');
             }
@@ -189,56 +163,6 @@ export default function RegisterForm(){
                         <Alert severity="error">{tokenError}</Alert>
                     </CardContent>
                 </Card>
-            </Box>
-        );
-    }
-
-    if (registered && !addingEvents) {
-        return (
-            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
-                <Card elevation={4} sx={{ maxWidth: 420, width: '100%', p: 2 }}>
-                    <CardContent>
-                        <Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
-                            Registration Successful!
-                        </Typography>
-                        <Typography variant="body1" sx={{ mb: 3 }}>
-                            Would you like to submit an event now?
-                        </Typography>
-                        <Stack direction="row" spacing={2}>
-                            <Button variant="contained" onClick={() => setAddingEvents(true)}>
-                                Yes, submit an event
-                            </Button>
-                            <Button variant="outlined" onClick={() => navigate.push('/partner')}>
-                                No, go to dashboard
-                            </Button>
-                        </Stack>
-                    </CardContent>
-                </Card>
-            </Box>
-        );
-    }
-
-    if (addingEvents) {
-        return (
-            <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', px: 2, py: 4 }}>
-                <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                    <Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
-                        Submit Event(s)
-                    </Typography>
-                    {eventsAdded > 0 && (
-                        <Alert severity="success" sx={{ mb: 2 }}>{eventsAdded} event(s) added.</Alert>
-                    )}
-                    <EventSubmissionForm key={formKey} onSubmit={handleEventSubmit} submitLabel="Add Event" />
-                    {eventsAdded > 0 && (
-                        <Button
-                            variant="contained"
-                            onClick={() => navigate.push('/partner')}
-                            sx={{ mt: 2 }}
-                        >
-                            Done — Go to Dashboard
-                        </Button>
-                    )}
-                </Box>
             </Box>
         );
     }
@@ -356,7 +280,7 @@ export default function RegisterForm(){
                                             ? `✓ Valid code — you will join ${codeOrgName}`
                                             : '✓ Valid code — your account will be activated immediately'
                                         : codeStatus === 'invalid' ? codeMessage
-                                        : 'If you have an access code, enter it here'
+                                        : 'If you have an access code, enter it here for instant verification'
                                 }
                                 error={codeStatus === 'invalid'}
                                 color={codeStatus === 'valid' ? 'success' : undefined}
