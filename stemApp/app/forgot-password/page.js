@@ -5,6 +5,7 @@ import {
   Box, Card, CardContent, Typography, TextField,
   Button, Alert, Stack,
 } from '@mui/material';
+import Link from 'next/link';
 import { apiUrl } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
@@ -56,6 +57,9 @@ export default function ForgotPasswordPage() {
                 <Button type="submit" variant="contained" fullWidth disabled={loading || !email}>
                   Send Reset Link
                 </Button>
+                <Typography variant="body2" align="center" color="text.secondary">
+                  <Link href="/login" style={{ color: 'inherit' }}>Back to sign in</Link>
+                </Typography>
               </Stack>
             </Box>
           )}

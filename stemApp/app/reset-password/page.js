@@ -6,6 +6,7 @@ import {
   Box, Card, CardContent, Typography, TextField,
   Button, Alert, Stack, CircularProgress,
 } from '@mui/material';
+import Link from 'next/link';
 import { apiUrl } from '@/lib/api';
 
 function ResetPasswordForm() {
@@ -79,6 +80,9 @@ function ResetPasswordForm() {
         <Button type="submit" variant="contained" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={22} color="inherit" /> : 'Reset Password'}
         </Button>
+        <Typography variant="body2" align="center" color="text.secondary">
+          <Link href="/login" style={{ color: 'inherit' }}>Back to sign in</Link>
+        </Typography>
       </Stack>
     </Box>
   );
