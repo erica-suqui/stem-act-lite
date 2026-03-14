@@ -124,6 +124,11 @@ class DenyEventRequest(BaseModel):
     comment: str = Field(min_length=1)
 
 
+class PostCommentRequest(BaseModel):
+    body: str = Field(min_length=1)
+    author_role: str = Field(pattern="^(partner|admin)$")
+
+
 class ForgotPasswordRequest(BaseModel):
     email: str = Field(min_length=1)
 
@@ -970,5 +975,59 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         {"token": payload.token},
     )
     db.commit()
+
+    return {"success": True}
+
+
+@app.get("/api/events/{event_id}/comments")
+def get_event_comments(event_id: int, db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("""
+            SELECT comment_id, event_id, author_role, body, created_at
+            FROM event_comments
+            WHERE event_id = :event_id
+            ORDER BY created_at ASC
+        """),
+        {"event_id": event_id},
+    ).mappings().all()
+    return {"comments": [dict(r) for r in rows]}
+
+
+@app.post("/api/events/{event_id}/comments")
+def post_event_comment(event_id: int, payload: PostCommentRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    event_row = db.execute(
+        text("SELECT title, submitter_email FROM events WHERE event_id = :event_id"),
+        {"event_id": event_id},
+    ).mappings().first()
+
+    if event_row is None:
+        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+
+    db.execute(
+        text("""
+            INSERT INTO event_comments (event_id, author_role, body)
+            VALUES (:event_id, :author_role, :body)
+        """),
+        {"event_id": event_id, "author_role": payload.author_role, "body": payload.body.strip()},
+    )
+    db.commit()
+
+    admin_email = os.getenv("ADMIN_EMAIL", "")
+    title = event_row["title"]
+
+    if payload.author_role == "partner" and admin_email:
+        background_tasks.add_task(
+            send_email,
+            admin_email,
+            f"Partner replied on event: {title}",
+            f"A partner has replied to the comment thread for event \"{title}\".\n\nMessage:\n{payload.body.strip()}\n\nView in admin dashboard.",
+        )
+    elif payload.author_role == "admin" and event_row["submitter_email"]:
+        background_tasks.add_task(
+            send_email,
+            event_row["submitter_email"],
+            f"Admin replied on your event: {title}",
+            f"An admin has replied to your event \"{title}\".\n\nMessage:\n{payload.body.strip()}\n\nView the full thread in your partner dashboard.",
+        )
 
     return {"success": True}
