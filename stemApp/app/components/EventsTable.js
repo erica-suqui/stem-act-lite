@@ -11,7 +11,7 @@ import { formatDate, formatCost, formatTimeRange } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import {
   Box, Stack, Tabs, Tab, TextField, Select, MenuItem, FormControl,
-  InputLabel, Typography, Chip, Button, Collapse,
+  InputLabel, Typography, Chip, Button, Collapse, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Dialog, DialogTitle, DialogContent,
 } from '@mui/material';
@@ -31,6 +31,39 @@ export default function EventsTable({ events: initialEvents, organizations }) {
   const [loadingId, setLoadingId]         = useState(null);
   const [addEventOpen, setAddEventOpen]   = useState(false);
   const { toasts, addToast, dismissToast } = useToast();
+
+  const [commentThreads, setCommentThreads] = useState({});
+  const [commentInputs, setCommentInputs]   = useState({});
+  const [sendingComment, setSendingComment] = useState(null);
+
+  const fetchComments = useCallback(async (eventId) => {
+    const res = await fetch(apiUrl(`/api/events/${eventId}/comments`));
+    if (!res.ok) return;
+    const data = await res.json();
+    setCommentThreads(prev => ({ ...prev, [eventId]: data.comments }));
+  }, []);
+
+  const handleAdminComment = useCallback(async (eventId) => {
+    const body = (commentInputs[eventId] || '').trim();
+    if (!body) return;
+    setSendingComment(eventId);
+    try {
+      const res = await fetch(apiUrl(`/api/events/${eventId}/comments`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, author_role: 'admin' }),
+      });
+      if (res.ok) {
+        setCommentInputs(prev => ({ ...prev, [eventId]: '' }));
+        await fetchComments(eventId);
+        addToast('Reply sent to partner.', 'success');
+      } else {
+        addToast('Failed to send reply.', 'error');
+      }
+    } finally {
+      setSendingComment(null);
+    }
+  }, [commentInputs, fetchComments, addToast]);
 
   const isPartnerTab = activeTab === 0;
 
@@ -394,7 +427,13 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                         )}
                         <Button
                           size="small" variant="text" color="inherit"
-                          onClick={() => setExpandedId(isExpanded ? null : event.event_id)}
+                          onClick={() => {
+                            const next = isExpanded ? null : event.event_id;
+                            setExpandedId(next);
+                            if (next && !commentThreads[next]) {
+                              fetchComments(next);
+                            }
+                          }}
                           sx={{ minWidth: 0, px: 1, fontSize: '0.75rem', color: 'text.secondary' }}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? 'Hide' : 'Show'} details: ${event.title}`}
@@ -426,6 +465,39 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                                 <Typography variant="body2" color="error.dark">{event.admin_comment}</Typography>
                               </>
                             )}
+                            <Divider sx={{ my: 1.5 }} />
+                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>Comment Thread</Typography>
+                            {(commentThreads[event.event_id] || []).length === 0 ? (
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>No comments yet.</Typography>
+                            ) : (
+                              (commentThreads[event.event_id] || []).map(c => (
+                                <Box key={c.comment_id} sx={{ mb: 1, p: 1, bgcolor: c.author_role === 'admin' ? 'primary.50' : 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                                  <Typography variant="caption" fontWeight={600} color={c.author_role === 'admin' ? 'primary.dark' : 'text.secondary'}>
+                                    {c.author_role === 'admin' ? 'You (Admin)' : 'Partner'}
+                                  </Typography>
+                                  <Typography variant="body2">{c.body}</Typography>
+                                </Box>
+                              ))
+                            )}
+                            <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
+                              <TextField
+                                size="small"
+                                multiline
+                                rows={2}
+                                fullWidth
+                                placeholder="Reply to partner..."
+                                value={commentInputs[event.event_id] || ''}
+                                onChange={e => setCommentInputs(prev => ({ ...prev, [event.event_id]: e.target.value }))}
+                              />
+                              <Button
+                                variant="contained"
+                                size="small"
+                                disabled={sendingComment === event.event_id || !commentInputs[event.event_id]?.trim()}
+                                onClick={() => handleAdminComment(event.event_id)}
+                              >
+                                Send
+                              </Button>
+                            </Stack>
                           </Box>
                         </Collapse>
                       </TableCell>
