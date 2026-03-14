@@ -25,6 +25,7 @@ import {
 import { apiUrl } from '@/lib/api';
 import EventSubmissionForm from '@/app/components/EventSubmissionForm';
 import Toast from '@/app/components/Toast';
+import SignOutButton from '@/app/components/SignOutButton';
 
 const STATUS_CONFIG = {
   pending:  { color: 'warning',  label: 'Pending' },
@@ -170,9 +171,12 @@ export default function PartnerDashboard() {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">My Events</Typography>
-        <Button variant="contained" onClick={() => setSubmitOpen(true)}>
-          + Submit New Event
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="contained" onClick={() => setSubmitOpen(true)}>
+            + Submit New Event
+          </Button>
+          <SignOutButton />
+        </Stack>
       </Box>
 
       {loading ? (
