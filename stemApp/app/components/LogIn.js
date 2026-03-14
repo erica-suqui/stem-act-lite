@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 import * as z from 'zod';
 import { apiUrl } from '@/lib/api';
@@ -20,6 +20,8 @@ export default function LogIn(){
 
     const [errors, setErrors] = useState({})
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const justReset = searchParams.get('reset') === '1';
     const [loginError, setLoginError] = useState('');
     const LogInSchema = z.object({
         email: z.string().email().min(1,"Missing Email"),
@@ -100,6 +102,11 @@ export default function LogIn(){
             <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
               STEM-ACT Admin &amp; Partner Portal
             </Typography>
+            {justReset && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Password reset successfully. Please log in.
+              </Alert>
+            )}
             <Box component="form" onSubmit={handleFormSubmit} noValidate>
               <Stack spacing={2}>
                 <TextField
@@ -128,6 +135,9 @@ export default function LogIn(){
                 <Button type="submit" variant="contained" fullWidth size="large">
                   Log In
                 </Button>
+                <Typography variant="body2" align="center" color="text.secondary">
+                  <Link href="/forgot-password" style={{ color: 'inherit' }}>Forgot password?</Link>
+                </Typography>
                 <Typography variant="body2" align="center" color="text.secondary">
                   Not registered?{' '}
                   <Link href="/register" style={{ color: 'inherit' }}>Register here</Link>
