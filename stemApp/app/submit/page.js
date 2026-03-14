@@ -16,6 +16,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
+import Link from 'next/link';
 import { apiUrl } from '@/lib/api';
 
 const CT_COUNTIES = [
@@ -127,7 +128,12 @@ export default function SubmitPage() {
 
   return (
     <Box sx={{ maxWidth: 700, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" gutterBottom>Submit a STEM Event</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h4">Submit a STEM Event</Typography>
+        <Button component={Link} href="/" variant="outlined" size="small">
+          ← Back to Events
+        </Button>
+      </Box>
       <Typography variant="body1" sx={{ mb: 3 }}>
         Fill out the form below to submit your event for review. All submissions are reviewed before being published.
       </Typography>
