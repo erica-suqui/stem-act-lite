@@ -124,6 +124,15 @@ class DenyEventRequest(BaseModel):
     comment: str = Field(min_length=1)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=1)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1)
+    new_password: str = Field(min_length=8)
+
+
 class UpdateOrganizationStatusRequest(BaseModel):
     status: OrganizationStatus
 
@@ -889,3 +898,77 @@ def get_organization(org_id: int, db: Session = Depends(get_db)):
     if row is None:
         return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
     return {"success": True, "organization": dict(row)}
+
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+
+    user = db.execute(
+        text("SELECT user_id FROM users WHERE lower(email) = :email LIMIT 1"),
+        {"email": email},
+    ).mappings().first()
+
+    # Always return success to prevent user enumeration
+    if user is None:
+        return {"success": True}
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    db.execute(
+        text("""
+            INSERT INTO password_reset_tokens (token, user_id, expires_at)
+            VALUES (:token, :user_id, :expires_at)
+        """),
+        {"token": token, "user_id": user["user_id"], "expires_at": expires_at},
+    )
+    db.commit()
+
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:3000/").rstrip("/")
+    reset_link = f"{base_url}/reset-password?token={token}"
+
+    background_tasks.add_task(
+        send_email,
+        email,
+        "Reset your STEM-ACT password",
+        f"Click the link below to reset your password. This link expires in 1 hour.\n\n{reset_link}\n\nIf you did not request a password reset, you can ignore this email.",
+    )
+
+    return {"success": True}
+
+
+@app.post("/api/auth/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    token_row = db.execute(
+        text("""
+            SELECT token, user_id, expires_at, used_at
+            FROM password_reset_tokens
+            WHERE token = :token
+            LIMIT 1
+        """),
+        {"token": payload.token},
+    ).mappings().first()
+
+    if token_row is None:
+        return JSONResponse({"success": False, "message": "Invalid or expired reset link."}, status_code=400)
+
+    if token_row["used_at"] is not None:
+        return JSONResponse({"success": False, "message": "This reset link has already been used."}, status_code=400)
+
+    if token_row["expires_at"] < datetime.now(timezone.utc):
+        return JSONResponse({"success": False, "message": "This reset link has expired."}, status_code=400)
+
+    password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
+
+    db.execute(
+        text("UPDATE users SET password_hash = :hash WHERE user_id = :user_id"),
+        {"hash": password_hash, "user_id": token_row["user_id"]},
+    )
+    db.execute(
+        text("UPDATE password_reset_tokens SET used_at = now() WHERE token = :token"),
+        {"token": payload.token},
+    )
+    db.commit()
+
+    return {"success": True}
