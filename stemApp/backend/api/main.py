@@ -15,6 +15,7 @@ from sqlalchemy import text
 from pydantic import BaseModel, Field
 
 from .database import SessionLocal
+from .email_service import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -495,9 +496,8 @@ def validate_invitation(token: str, db: Session = Depends(get_db)):
 
 @app.post("/api/events/{event_id}/approve")
 def approve_event(event_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    # Fetch address fields before approving (needed for geocoding)
     event_row = db.execute(
-        text("SELECT address, city FROM events WHERE event_id = :event_id"),
+        text("SELECT address, city, title, submitter_email FROM events WHERE event_id = :event_id"),
         {"event_id": event_id},
     ).mappings().first()
 
@@ -514,37 +514,50 @@ def approve_event(event_id: int, background_tasks: BackgroundTasks, db: Session 
     )
     db.commit()
 
-    # Geocode asynchronously — never blocks or fails the approval
     background_tasks.add_task(
         _geocode_event, event_id, event_row["address"], event_row["city"]
     )
+
+    if event_row["submitter_email"]:
+        background_tasks.add_task(
+            send_email,
+            event_row["submitter_email"],
+            f"Your event has been approved: {event_row['title']}",
+            f"Good news! Your event \"{event_row['title']}\" has been approved and is now published on the STEM-ACT events page.",
+        )
 
     return {"success": True}
 
 
 @app.post("/api/events/{event_id}/deny")
-def deny_event(event_id: int, payload: DenyEventRequest, db: Session = Depends(get_db)):
+def deny_event(event_id: int, payload: DenyEventRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if not payload.comment.strip():
         return JSONResponse(
             {"success": False, "message": "Comment is required when denying an event"},
             status_code=400,
         )
     result = db.execute(
-        text(
-            """
+        text("""
             UPDATE events
             SET status = :status, admin_comment = :comment, reviewed_at = now()
             WHERE event_id = :event_id
-            RETURNING event_id
-            """
-        ),
+            RETURNING event_id, title, submitter_email
+        """),
         {"status": EventStatus.denied.value, "comment": payload.comment.strip(), "event_id": event_id},
     )
-    row = result.first()
+    row = result.mappings().first()
     db.commit()
 
     if row is None:
         return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+
+    if row["submitter_email"]:
+        background_tasks.add_task(
+            send_email,
+            row["submitter_email"],
+            f"Your event was not approved: {row['title']}",
+            f"Your event \"{row['title']}\" was not approved.\n\nAdmin comment: {payload.comment.strip()}\n\nYou may reply through your partner dashboard.",
+        )
 
     return {"success": True}
 
