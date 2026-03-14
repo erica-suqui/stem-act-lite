@@ -10,15 +10,9 @@ import dynamic from 'next/dynamic';
 
 const EventsMap = dynamic(() => import('./EventsMap'), { ssr: false });
 
-const SC_COUNTIES = [
-  'Abbeville','Aiken','Allendale','Anderson','Bamberg','Barnwell','Beaufort',
-  'Berkeley','Calhoun','Charleston','Cherokee','Chester','Chesterfield',
-  'Clarendon','Colleton','Darlington','Dillon','Dorchester','Edgefield',
-  'Fairfield','Florence','Georgetown','Greenville','Greenwood','Hampton',
-  'Horry','Jasper','Kershaw','Lancaster','Laurens','Lee','Lexington',
-  'Marion','Marlboro','McCormick','Newberry','Oconee','Orangeburg',
-  'Pickens','Richland','Saluda','Spartanburg','Sumter','Union',
-  'Williamsburg','York',
+const CT_COUNTIES = [
+  'Fairfield','Hartford','Litchfield','Middlesex',
+  'New Haven','New London','Tolland','Windham',
 ];
 
 export default function PublicEventsClient({ events }) {
@@ -57,7 +51,7 @@ export default function PublicEventsClient({ events }) {
             onChange={e => setCounty(e.target.value)}
           >
             <MenuItem value="">All Counties</MenuItem>
-            {SC_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+            {CT_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </Select>
         </FormControl>
 

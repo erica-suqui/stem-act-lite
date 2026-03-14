@@ -25,54 +25,16 @@ const greyIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// SC county geographic centroids — used as fallback when lat/lng is null
-const SC_COUNTY_CENTROIDS = {
-  'Abbeville':    [34.2228, -82.3796],
-  'Aiken':        [33.5438, -81.7146],
-  'Allendale':    [32.9860, -81.3879],
-  'Anderson':     [34.5254, -82.6449],
-  'Bamberg':      [33.2176, -81.0649],
-  'Barnwell':     [33.2576, -81.3987],
-  'Beaufort':     [32.3532, -80.6600],
-  'Berkeley':     [33.1985, -79.9571],
-  'Calhoun':      [33.6726, -80.7862],
-  'Charleston':   [32.7765, -79.9311],
-  'Cherokee':     [35.0460, -81.6218],
-  'Chester':      [34.6818, -81.1546],
-  'Chesterfield': [34.6368, -80.0754],
-  'Clarendon':    [33.6576, -80.2157],
-  'Colleton':     [32.9371, -80.7187],
-  'Darlington':   [34.3196, -79.9754],
-  'Dillon':       [34.4046, -79.3682],
-  'Dorchester':   [33.1090, -80.4076],
-  'Edgefield':    [33.7626, -81.9690],
-  'Fairfield':    [34.3810, -81.1240],
-  'Florence':     [34.0360, -79.7668],
-  'Georgetown':   [33.5435, -79.2897],
-  'Greenville':   [34.8526, -82.3940],
-  'Greenwood':    [34.1818, -82.1160],
-  'Hampton':      [32.8676, -81.1282],
-  'Horry':        [33.9271, -78.9882],
-  'Jasper':       [32.5296, -81.0768],
-  'Kershaw':      [34.3382, -80.5793],
-  'Lancaster':    [34.6860, -80.7079],
-  'Laurens':      [34.4893, -82.0132],
-  'Lee':          [34.1601, -80.2568],
-  'Lexington':    [33.8935, -81.2418],
-  'Marion':       [34.1710, -79.4207],
-  'Marlboro':     [34.6201, -79.6621],
-  'McCormick':    [33.9026, -82.3068],
-  'Newberry':     [34.2810, -81.6076],
-  'Oconee':       [34.7601, -83.0632],
-  'Orangeburg':   [33.4485, -80.8179],
-  'Pickens':      [34.8832, -82.7182],
-  'Richland':     [34.0007, -80.9009],
-  'Saluda':       [34.0035, -81.7454],
-  'Spartanburg':  [34.9496, -81.9320],
-  'Sumter':       [33.9185, -80.3762],
-  'Union':        [34.7082, -81.6240],
-  'Williamsburg': [33.6243, -79.8279],
-  'York':         [34.9965, -81.2418],
+// CT county geographic centroids — used as fallback when lat/lng is null
+const CT_COUNTY_CENTROIDS = {
+  'Fairfield':   [41.1408, -73.2637],
+  'Hartford':    [41.7658, -72.6851],
+  'Litchfield':  [41.7471, -73.2387],
+  'Middlesex':   [41.4459, -72.5370],
+  'New Haven':   [41.3083, -72.9279],
+  'New London':  [41.4501, -72.0974],
+  'Tolland':     [41.8540, -72.3648],
+  'Windham':     [41.8262, -72.0474],
 };
 
 function formatDate(iso) {
@@ -83,7 +45,7 @@ function formatDate(iso) {
 export default function EventsMap({ events }) {
   const mappable = events.filter(e => {
     if (e.lat != null && e.lng != null) return true;
-    return e.county in SC_COUNTY_CENTROIDS;
+    return e.county in CT_COUNTY_CENTROIDS;
   });
 
   if (mappable.length === 0) {
@@ -97,8 +59,8 @@ export default function EventsMap({ events }) {
   return (
     <Box sx={{ height: { xs: 300, md: 500 }, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
       <MapContainer
-        center={[33.8, -81.1]}
-        zoom={7}
+        center={[41.6, -72.7]}
+        zoom={9}
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
@@ -110,7 +72,7 @@ export default function EventsMap({ events }) {
             const isExact = event.lat != null && event.lng != null;
             const position = isExact
               ? [event.lat, event.lng]
-              : SC_COUNTY_CENTROIDS[event.county];
+              : CT_COUNTY_CENTROIDS[event.county];
             const icon = isExact ? undefined : greyIcon;
             const safeHref = event.hyperlink && /^https?:\/\//i.test(event.hyperlink)
               ? event.hyperlink
