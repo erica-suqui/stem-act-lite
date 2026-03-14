@@ -2,8 +2,6 @@
 
 import { Box, Typography } from '@mui/material';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import MarkerClusterGroup from '@changey/react-leaflet-markercluster';
-import '@changey/react-leaflet-markercluster/dist/styles.min.css';
 import L from 'leaflet';
 
 // Fix Leaflet's broken default icon in Next.js / webpack builds
@@ -70,8 +68,7 @@ export default function EventsMap({ events }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MarkerClusterGroup>
-          {mappable.map(event => {
+        {mappable.map(event => {
             const isExact = event.lat != null && event.lng != null;
             const position = isExact
               ? [event.lat, event.lng]
@@ -109,7 +106,6 @@ export default function EventsMap({ events }) {
               </Marker>
             );
           })}
-        </MarkerClusterGroup>
       </MapContainer>
     </Box>
   );
