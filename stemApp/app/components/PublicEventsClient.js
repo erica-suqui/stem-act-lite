@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import {
   Box, Grid, Card, CardContent, CardActions,Typography,
   Button, Select, MenuItem, FormControl, InputLabel, Chip, Stack,
-  Tabs, Tab, TextField
+  Tabs, Tab, TextField, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -27,6 +27,8 @@ export default function PublicEventsClient({ events }) {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState(dayjs());
   const [endDate, setEndDate] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
 
   const audiences = useMemo(() => {
     const vals = events.map(e => e.audience).filter(Boolean);
@@ -54,6 +56,8 @@ export default function PublicEventsClient({ events }) {
   const hasFilters = county || audience || search || cost || startDate || endDate;
 
 
+  console.log('selected event:', selectedEvent);
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
@@ -61,7 +65,6 @@ export default function PublicEventsClient({ events }) {
         <Tab label="Map" />
       </Tabs>
 
-      {/* Row 1 - Date pickers */}
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
       
@@ -186,18 +189,14 @@ export default function PublicEventsClient({ events }) {
                     </Typography>
                   </CardContent>
                   <CardActions>
-                    <Button
+                  <Button
                       size="small"
                       variant="outlined"
-                      disabled={!event.hyperlink}
-                      component={event.hyperlink ? Link : 'button'}
-                      href={event.hyperlink || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       aria-label={`More Info: ${event.title}`}
-                    >
+                      onClick={() => setSelectedEvent(event)}
+                  >
                       More Info
-                    </Button>
+                  </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -205,6 +204,47 @@ export default function PublicEventsClient({ events }) {
           </Grid>
         )
       )}
+      <Dialog
+        open={selectedEvent !== null}
+        onClose={() => setSelectedEvent(null)}
+        scroll="paper"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{selectedEvent?.title}</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
+          <strong>Date: </strong>
+            {selectedEvent?.start_datetime
+              ? new Date(selectedEvent.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'})
+              : 'Date TBD'
+            } 
+          
+          </Typography>
+          <Typography variant="body2" paragraph>{selectedEvent?.description}</Typography>
+          <Typography variant="body2">
+                <strong>Time: </strong>
+                {selectedEvent?.start_datetime 
+                    ? new Date(selectedEvent.start_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    : 'TBD'
+                }
+                {selectedEvent?.end_datetime && 
+                    ` – ${new Date(selectedEvent.end_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+                }
+            </Typography>
+          {selectedEvent?.audience && <Typography variant="body2"><strong>Audience:</strong> {selectedEvent.audience}</Typography>}
+          {selectedEvent?.address && <Typography variant="body2"><strong>Address:</strong> {selectedEvent.address}, {selectedEvent?.city}, CT</Typography>}
+          {selectedEvent?.contact_email && <Typography variant="body2"><strong>Contact:</strong> {selectedEvent.contact_email}</Typography>}
+        </DialogContent>
+        <DialogActions>
+          {selectedEvent?.hyperlink && (
+            <Button component={Link} href={selectedEvent.hyperlink} target="_blank" rel="noopener noreferrer" variant="contained">
+              Event Link
+            </Button>
+          )}
+          <Button onClick={() => setSelectedEvent(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {tab === 1 && (
         <EventsMap events={filtered} />
