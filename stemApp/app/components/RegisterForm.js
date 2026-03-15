@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
+import {
+  Box, Card, CardContent, Typography, TextField,
+  Button, Alert, Stack, CircularProgress
+} from '@mui/material';
 
 export default function RegisterForm(){
-    //Form Data
     const [formData,setFormData] = useState ({
         firstName: '',
         lastName: '',
@@ -15,12 +19,21 @@ export default function RegisterForm(){
         confirmPassword: '',
         orgName: '',
         phone: '',
+        partnerCode: '',
     });
 
-    //Form Errors to raise Flags using Zod Library 
     const [errors, setErrors] = useState({})
-    const [showModal, setShowModal] = useState(false);
 
+    const searchParams = useSearchParams();
+    const inviteToken = searchParams.get('token');
+
+    const [tokenValid, setTokenValid] = useState(inviteToken ? null : true);
+    const [tokenError, setTokenError] = useState('');
+
+    const [submitError, setSubmitError] = useState('');
+    const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
+    const [codeMessage, setCodeMessage] = useState('');
+    const [codeOrgName, setCodeOrgName] = useState(null); // org name from code, if any
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -39,11 +52,58 @@ export default function RegisterForm(){
         path: ['confirmPassword']
     });
 
+    useEffect(() => {
+        if (!inviteToken) return;
+        const controller = new AbortController();
+        fetch(apiUrl(`/api/invitations/validate?token=${encodeURIComponent(inviteToken)}`), { signal: controller.signal })
+            .then(r => r.json())
+            .then(data => {
+                if (data.valid) setTokenValid(true);
+                else { setTokenValid(false); setTokenError(data.message || 'Invalid invitation link'); }
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                setTokenValid(false);
+                setTokenError('Could not verify invitation. Please try again.');
+            });
+        return () => controller.abort();
+    }, [inviteToken]);
+
     const navigate = useRouter();
 
+    const handleCodeBlur = async () => {
+        const code = formData.partnerCode.trim();
+        if (!code) { setCodeStatus(null); return; }
+        try {
+            const res = await fetch(apiUrl(`/api/partner-codes/validate?code=${encodeURIComponent(code)}`));
+            const data = await res.json();
+            if (data.valid) {
+                setCodeStatus('valid');
+                setCodeMessage('');
+                setCodeOrgName(data.org_name || null);
+                if (data.org_name) {
+                    setFormData(prev => ({ ...prev, orgName: data.org_name }));
+                }
+            } else {
+                setCodeStatus('invalid');
+                setCodeMessage(data.message || 'Invalid code');
+                setCodeOrgName(null);
+            }
+        } catch {
+            setCodeStatus('invalid');
+            setCodeMessage('Could not verify code');
+            setCodeOrgName(null);
+        }
+    };
+
     const handleChange = (e) => {
-        const {name,value} = e.target;
-        setFormData(prev => ({...prev,[name]: value}))
+        const {name, value} = e.target;
+        setFormData(prev => ({...prev, [name]: value}));
+        if (name === 'partnerCode' && !value.trim()) {
+            setCodeStatus(null);
+            setCodeOrgName(null);
+            setFormData(prev => ({ ...prev, partnerCode: value, orgName: '' }));
+        }
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -55,6 +115,7 @@ export default function RegisterForm(){
 
     const handleFormSubmit = async(e) => {
         e.preventDefault();
+        setSubmitError('');
         const userData = registerSchema.safeParse(formData)
         if (!userData.success){
                 setErrors(userData.error.format());
@@ -64,109 +125,176 @@ export default function RegisterForm(){
         try {
             const response = await fetch(apiUrl('/api/register'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)  
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    inviteToken: inviteToken || null,
+                    partnerCode: formData.partnerCode.trim() || null,
+                })
             });
-           const data = await response.json();  
+           const data = await response.json();
 
             if (data.success) {
-                setShowModal(true);
-                setTimeout(() => {
-                    navigate.push("/login");
-                }, 2000);
+                navigate.push('/partner');
             } else {
-                alert("Error: " + data.error);
-            }     
-        } 
+                setSubmitError(data.error || 'Registration failed');
+            }
+        }
         catch (error) {
             console.error("Error:", error);
-            alert("Something went wrong!");
+            setSubmitError('Something went wrong. Please try again.');
         }
-
-
     };
-    
+
+    if (inviteToken && tokenValid === null) {
+        return (
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (inviteToken && tokenValid === false) {
+        return (
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+                <Card elevation={4} sx={{ maxWidth: 420, width: '100%', p: 2 }}>
+                    <CardContent>
+                        <Typography variant="h6" color="error" gutterBottom>Invitation Error</Typography>
+                        <Alert severity="error">{tokenError}</Alert>
+                    </CardContent>
+                </Card>
+            </Box>
+        );
+    }
+
     return (
-        <div className = "register-form">
-            <form className = "form-fields" onSubmit = {handleFormSubmit}>
-                <p>First Name:</p>
-                <input
-                type="text"
-                name="firstName"
-                placeholder="First Name"
-                value={formData.firstName}
-                onChange={handleChange}
-                />
-                {errors.firstName && <span>{errors.firstName._errors[0]}</span>}
-
-                <p>Last Name:</p>
-                <input
-                type="text"
-                name="lastName"
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChange={handleChange}
-                />
-                {errors.lastName && <span>{errors.lastName._errors[0]}</span>}
-                
-                <p >Organization Name:</p>
-                <input type = "text" 
-                id = "org"
-                name="orgName" 
-                placeholder="Your Orgnization Name"
-                value = {formData.orgName}
-                onChange={handleChange}
-                />
-                {errors.orgName && <span>{errors.orgName._errors[0]}</span>}
-
-                <p>Email: </p>
-                <input type = "email" 
-                name="email" 
-                placeholder="email@organizaiton.org"
-                value = {formData.email}
-                onChange={handleChange}
-                />
-                {errors.email && <span>{errors.email._errors[0]}</span>}
-
-                <p>Phone: </p>
-                <input type = "text" 
-                name="phone" 
-                placeholder="000-000-000"
-                value = {formData.phone}
-                onChange={handleChange}
-                />
-                {errors.phone && <span>{errors.phone._errors[0]}</span>}
-
-                <p>Password: </p>
-                <input type = "password" 
-                name="password" 
-                placeholder="Please Enter a Password"
-                value = {formData.password}
-                onChange={handleChange}
-                />
-                {errors.password && <span>{errors.password._errors[0]}</span>}
-                
-                <p>Confirm Password: </p>
-                <input type = "password" 
-                name="confirmPassword" 
-                placeholder="Please Confirm Your Password"
-                value = {formData.confirmPassword}
-                onChange={handleChange}
-                />
-                {errors.confirmPassword && <span>{errors.confirmPassword._errors[0]}</span>}
-                <button type = "submit" >Submit</button>
-
-                
-            </form>
-            {showModal && (
-            <div className="modal-overlay-register-page">
-                <div className="modal-box-register-page">
-                <p>Registration successful! Redirecting to login...</p>
-                </div>
-            </div>
-            )}
-        </div>
+        <Box sx={{
+            minHeight: '100vh', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', bgcolor: 'background.default', px: 2, py: 4,
+        }}>
+            <Card elevation={4} sx={{ width: '100%', maxWidth: 480, p: 2 }}>
+                <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                        <Button size="small" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
+                    </Box>
+                    <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+                        Partner Registration
+                    </Typography>
+                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+                        Create your organization account
+                    </Typography>
+                    <Box component="form" onSubmit={handleFormSubmit} noValidate>
+                        <Stack spacing={2}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <TextField
+                                    label="First Name"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                    error={Boolean(errors.firstName)}
+                                    helperText={errors.firstName?._errors?.[0]}
+                                />
+                                <TextField
+                                    label="Last Name"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                    error={Boolean(errors.lastName)}
+                                    helperText={errors.lastName?._errors?.[0]}
+                                />
+                            </Stack>
+                            <TextField
+                                label="Organization Name"
+                                name="orgName"
+                                value={formData.orgName}
+                                onChange={handleChange}
+                                fullWidth
+                                required={!codeOrgName}
+                                error={Boolean(errors.orgName)}
+                                helperText={
+                                    codeOrgName
+                                        ? `Joining: ${codeOrgName} — your account will be activated immediately`
+                                        : errors.orgName?._errors?.[0]
+                                }
+                                inputProps={{ readOnly: Boolean(codeOrgName) }}
+                                color={codeOrgName ? 'success' : undefined}
+                                focused={codeOrgName ? true : undefined}
+                            />
+                            <TextField
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.email)}
+                                helperText={errors.email?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Phone (10 digits)"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.phone)}
+                                helperText={errors.phone?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Password"
+                                name="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.password)}
+                                helperText={errors.password?._errors?.[0] || 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}
+                            />
+                            <TextField
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.confirmPassword)}
+                                helperText={errors.confirmPassword?._errors?.[0]}
+                            />
+                            <TextField
+                                label="Partner Access Code (optional)"
+                                name="partnerCode"
+                                value={formData.partnerCode}
+                                onChange={handleChange}
+                                onBlur={handleCodeBlur}
+                                fullWidth
+                                helperText={
+                                    codeStatus === 'valid'
+                                        ? codeOrgName
+                                            ? `✓ Valid code — you will join ${codeOrgName}`
+                                            : '✓ Valid code — your account will be activated immediately'
+                                        : codeStatus === 'invalid' ? codeMessage
+                                        : 'If you have an access code, enter it here for instant verification'
+                                }
+                                error={codeStatus === 'invalid'}
+                                color={codeStatus === 'valid' ? 'success' : undefined}
+                                focused={codeStatus === 'valid' ? true : undefined}
+                                inputProps={{ style: { textTransform: 'uppercase' } }}
+                            />
+                            {submitError && <Alert severity="error">{submitError}</Alert>}
+                            <Button type="submit" variant="contained" fullWidth size="large">
+                                Register
+                            </Button>
+                        </Stack>
+                    </Box>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }

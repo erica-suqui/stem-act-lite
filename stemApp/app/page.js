@@ -1,15 +1,62 @@
-'use client';
+import { Box, Button, Stack, Typography, Container } from '@mui/material';
+import Link from 'next/link';
+import PublicEventsClient from './components/PublicEventsClient';
 
-import LogIn from './components/LogIn';
+async function getApprovedEvents() {
+  try {
+    const res = await fetch('http://localhost:8000/api/events?status=approved', {
+      cache: 'no-store',
+    });
+    const data = await res.json();
+    return data.success ? data.events : [];
+  } catch {
+    return [];
+  }
+}
 
-export default function HomePage() {
-	return (
-		<main className="login-container">
-			<h2>Log In</h2>
-			<LogIn />
-			<h5>
-				Not a User? Please <a href="/register"><span>Register</span></a> here first
-			</h5>
-		</main>
-	);
+export default async function HomePage() {
+  const events = await getApprovedEvents();
+  return (
+    <Box>
+      <Box sx={{ bgcolor: 'primary.dark', color: 'white', pt: '8px', pb: 2, px: 3, textAlign: 'center', position: 'relative' }}>
+        <Stack direction="row" sx={{ position: 'absolute', top: 8, left: 16 }} spacing={1}>
+          <Link href="/submit" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Submit an Event
+            </Button>
+          </Link>
+          <Link href="/register" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Become a Partner
+            </Button>
+          </Link>
+        </Stack>
+        <Stack direction="row" sx={{ position: 'absolute', top: 8, right: 16 }} spacing={1}>
+          <Link href="/login" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" size="small"
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/signup" style={{ textDecoration: 'none' }}>
+            <Button variant="contained" size="small"
+              sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' } }}>
+              Sign Up
+            </Button>
+          </Link>
+        </Stack>
+        <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
+          STEM Events in Connecticut
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+          Discover approved STEM events near you — for students, families, and educators across Connecticut.
+        </Typography>
+      </Box>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <PublicEventsClient events={events} />
+      </Container>
+    </Box>
+  );
 }

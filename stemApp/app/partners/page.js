@@ -1,5 +1,6 @@
 import pool from '@/lib/db';
 import PartnersTable from './PartnersTable';
+import { Box, Typography } from '@mui/material';
 import { hasSplitContactNameColumns } from '@/lib/dbFeatures';
 
 export const metadata = {
@@ -76,10 +77,11 @@ export default async function PartnersPage() {
 	const organizations = await getOrganizations();
 
 	return (
-		<main className="dashboard">
-			<h1 className="page-title">Partner Organizations</h1>
-
+		<Box sx={{ p: 3 }}>
+			<Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
+				Partner Organizations
+			</Typography>
 			<PartnersTable organizations={organizations} />
-		</main>
+		</Box>
 	);
 }

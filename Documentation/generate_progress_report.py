@@ -27,6 +27,7 @@ BLANK = prs.slide_layouts[6]   # completely blank layout
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def add_rect(slide, left, top, width, height, fill_color, line=False):
+    
     shape = slide.shapes.add_shape(
         1,  # MSO_SHAPE_TYPE.RECTANGLE
         Inches(left), Inches(top), Inches(width), Inches(height)

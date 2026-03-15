@@ -125,12 +125,31 @@ CREATE TABLE IF NOT EXISTS event_revisions (
 CREATE TABLE IF NOT EXISTS invitations (
   invitation_id  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   token          TEXT NOT NULL UNIQUE,
-  role           TEXT NOT NULL CHECK (role IN ('super_admin','admin')),
+  role           TEXT NOT NULL CHECK (role IN ('super_admin','admin','partner')),
   expires_at     TIMESTAMPTZ NOT NULL,
   consumed_at    TIMESTAMPTZ NULL,
   created_by_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- =========================
+-- PARTNER CODES
+-- =========================
+
+CREATE TABLE IF NOT EXISTS partner_codes (
+  code_id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code                 TEXT NOT NULL UNIQUE,
+  created_by_user_id   BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+  org_id               BIGINT NULL REFERENCES organizations(org_id) ON DELETE SET NULL,
+  expires_at           TIMESTAMPTZ NOT NULL,
+  consumed_at          TIMESTAMPTZ NULL,
+  consumed_by_org_id   BIGINT NULL REFERENCES organizations(org_id) ON DELETE SET NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_partner_codes_code ON partner_codes(code);
+CREATE INDEX IF NOT EXISTS idx_partner_codes_exp  ON partner_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_partner_codes_org  ON partner_codes(org_id);
 
 -- =========================
 -- NOTIFICATIONS

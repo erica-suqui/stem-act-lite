@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-const PUBLIC_ROUTES = new Set(['/', '/login', '/register']);
+const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit']);
 
 function isPartnerRoute(pathname, orgId) {
-	return pathname === `/partners/${orgId}`;
+	return pathname === `/partners/${orgId}` || pathname === '/partner';
 }
 
 export default function RouteGuard({ children }) {

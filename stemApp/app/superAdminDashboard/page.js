@@ -1,5 +1,6 @@
 import pool from '@/lib/db';
 import EventsTable from '../components/EventsTable';
+import { Box } from '@mui/material';
 import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
 
 export const dynamic = 'force-dynamic';
@@ -80,12 +81,11 @@ export default async function Dashboard() {
 	const organizations = await getOrganizations();
 
 	return (
-		<main className="dashboard">
-			<h1 className="page-title">Event Submissions</h1>
+		<Box sx={{ p: 3 }}>
 			<EventsTable
 				events={JSON.parse(JSON.stringify(events))}
 				organizations={JSON.parse(JSON.stringify(organizations))}
 			/>
-		</main>
+		</Box>
 	);
 }

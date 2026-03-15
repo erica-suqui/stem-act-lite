@@ -1,9 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 import * as z from 'zod';
 import { apiUrl } from '@/lib/api';
+import {
+  Box, Card, CardContent, Typography, TextField,
+  Button, Alert, Stack
+} from '@mui/material';
+import Link from 'next/link';
 
 
 export default function LogIn(){
@@ -15,6 +20,8 @@ export default function LogIn(){
 
     const [errors, setErrors] = useState({})
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const justReset = searchParams.get('reset') === '1';
     const [loginError, setLoginError] = useState('');
     const LogInSchema = z.object({
         email: z.string().email().min(1,"Missing Email"),
@@ -25,6 +32,7 @@ export default function LogIn(){
         const {name,value } = e.target;
         setFormData(prev => ({...prev,[name]: value}))
 
+        if (loginError) setLoginError('');
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -59,7 +67,7 @@ export default function LogIn(){
                 localStorage.setItem('role', data.role);
                 localStorage.setItem('orgId', data.orgId);
                 const roleRoutes = {
-                    partner: data.orgId ? `/partners/${data.orgId}` : '/partners',
+                    partner: '/partner',
                     admin: '/superAdminDashboard',
                     super_admin: '/superAdminDashboard',
                 };
@@ -81,32 +89,63 @@ export default function LogIn(){
 
 
 
-    return(
-        <div className = "login-form">
-           <form className = "form-fields-login" onSubmit = {handleFormSubmit}>
-                
-                <input type = "email" 
-                    id = "emai"
-                    name="email" 
-                    placeholder="Your Email"
-                    value = {formData.email}
-                    onChange={handleChange}
+    return (
+      <Box sx={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', bgcolor: 'background.default', px: 2,
+      }}>
+        <Card elevation={4} sx={{ width: '100%', maxWidth: 420, p: 2 }}>
+          <CardContent>
+            <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+              Sign In
+            </Typography>
+            <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+              STEM-ACT
+            </Typography>
+            {justReset && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Password reset successfully. Please log in.
+              </Alert>
+            )}
+            <Box component="form" onSubmit={handleFormSubmit} noValidate>
+              <Stack spacing={2}>
+                <TextField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  error={Boolean(errors.email)}
+                  helperText={errors.email?._errors?.[0]}
                 />
-                {errors.email && <span>{errors.email._errors[0]}</span>}
-
-                <input type = "password" 
-                id = "pass"
-                name="password" 
-                placeholder="Your Password"
-                value = {formData.password}
-                onChange={handleChange}
+                <TextField
+                  label="Password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  error={Boolean(errors.password)}
+                  helperText={errors.password?._errors?.[0]}
                 />
-                {errors.password && <span>{errors.password._errors[0]}</span>}
-                {loginError && <p className="error-message">{loginError}</p>}
-
-                <button type = "submit">Log In</button>
-
-            </form>
-        </div>
+                {loginError && <Alert severity="error">{loginError}</Alert>}
+                <Button type="submit" variant="contained" fullWidth size="large">
+                  Log In
+                </Button>
+                <Typography variant="body2" align="center" color="text.secondary">
+                  <Link href="/forgot-password" style={{ color: 'inherit' }}>Forgot password?</Link>
+                </Typography>
+                <Typography variant="body2" align="center" color="text.secondary">
+                  Not registered?{' '}
+                  <Link href="/register" style={{ color: 'inherit' }}>Register here</Link>
+                </Typography>
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
     );
 }

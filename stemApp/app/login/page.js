@@ -1,14 +1,10 @@
-'use client';
+import { Suspense } from 'react';
 import LogIn from '../components/LogIn';
 
 export default function LogInPage() {
   return (
-    <main className="login-container">
-      <h2>Log In</h2>
+    <Suspense>
       <LogIn />
-      <h5>
-        Not a User? Please <a href="/register"><span>Register</span></a> here first
-      </h5>
-    </main>
+    </Suspense>
   );
 }
