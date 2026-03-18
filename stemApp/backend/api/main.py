@@ -238,6 +238,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                 u.role,
                 u.org_id,
                 u.user_id,
+                u.email_verified,
                 o.status AS organization_status
             FROM users u
             LEFT JOIN organizations o ON o.org_id = u.org_id
@@ -263,6 +264,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             {"success": False, "error": "Invalid email or password"},
             status_code=401,
         )
+    
+    if not user["email_verified"] and user["role"] == UserRole.partner.value:
+        return JSONResponse(
+            {"success": False, "error": "Please verify your email before logging in"},
+            status_code=403,
+    )
+
 
     if (
         user["role"] == UserRole.partner.value
