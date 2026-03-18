@@ -281,7 +281,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/register")
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: RegisterRequest, background_tasks:BackgroundTasks ,db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     first_name = payload.firstName.strip()
     last_name = payload.lastName.strip()
@@ -421,10 +421,60 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             )
 
         db.commit()
+
+        token_vertify = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
+        db.execute(
+            text( """
+                    INSERT INTO email_verification_tokens(token,user_id,expires_at)
+                    VALUES(:token, :user_id, :expires_at)
+                """
+                ), 
+                {"token": token_vertify, "user_id": user_id, "expires_at": expires_at}
+        )
+        db.commit()
+
+        base_url = os.getenv("APP_BASE_URL", "http://localhost:3000").rstrip('/')
+        link = f"{base_url}/verify-email?token={token_vertify}"
+
+        background_tasks.add_task(
+        send_email,
+        email,
+         "Verify your STEM-ACT email",
+         f"Please verify your email by clicking the link below. This link expires in 24 hours.\n\n{link}\n\nYour account is pending admin approval.",
+        )
+
         return {"success": True, "user_id": user_id, "org_id": org_id}
     except Exception as exc:
         db.rollback()
         return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
+
+@app.get("/api/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("SELECT user_id, expires_at, used_at FROM email_verification_tokens WHERE token = :token"),
+        {"token": token}
+    ).mappings().first()
+
+    if not row:
+        return JSONResponse({"valid": False, "message": "Invalid verification link"}, status_code=404)
+    if row["used_at"] is not None:
+        return JSONResponse({"valid": False, "message": "This link has already been used"}, status_code=410)
+    if row["expires_at"] < datetime.now(timezone.utc):
+        return JSONResponse({"valid": False, "message": "This verification link has expired"}, status_code=410)
+
+    db.execute(
+        text("UPDATE users SET email_verified = :email_verified WHERE user_id = :user_id"),
+        {"email_verified": True, "user_id": row["user_id"]},
+    )
+    db.execute(
+        text("UPDATE email_verification_tokens SET used_at = now() WHERE token = :token"),
+        {"token": token},
+    )
+    db.commit()
+    return JSONResponse({"valid": True, "message": "Email verified successfully"})
+
 
 
 @app.post("/api/register/public")
@@ -523,6 +573,17 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
 
 @app.patch("/api/events/{event_id}")
 def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(get_db)):
+    event = db.execute(
+        text("SELECT start_datetime FROM events WHERE event_id = :event_id"),
+        {"event_id": event_id}
+    ).mappings().first()
+    
+    if event is None:
+        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+    
+    if event["start_datetime"] and event["start_datetime"] < datetime.now(timezone.utc):
+        return JSONResponse({"success": False, "message": "Cannot edit a past event"}, status_code=400)
+
     updates = {k: v for k, v in payload.dict().items() if v is not None}
     if not updates:
         return JSONResponse({"success": False, "message": "No fields to update"}, status_code=400)

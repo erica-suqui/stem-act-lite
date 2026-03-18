@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import {
   Box, Card, CardContent, Typography, TextField,
-  Button, Alert, Stack, CircularProgress
+  Button, Alert, Stack, CircularProgress, Dialog,DialogActions,DialogTitle,DialogContent
 } from '@mui/material';
 
 export default function RegisterForm(){
@@ -34,6 +34,8 @@ export default function RegisterForm(){
     const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
     const [codeMessage, setCodeMessage] = useState('');
     const [codeOrgName, setCodeOrgName] = useState(null); // org name from code, if any
+
+    const [emailSent, setEmailSent] = useState(false);
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -76,7 +78,7 @@ export default function RegisterForm(){
         if (!code) { setCodeStatus(null); return; }
         try {
             const res = await fetch(apiUrl(`/api/partner-codes/validate?code=${encodeURIComponent(code)}`));
-            const data = await res.json();
+            const data = await res.json();  
             if (data.valid) {
                 setCodeStatus('valid');
                 setCodeMessage('');
@@ -127,15 +129,22 @@ export default function RegisterForm(){
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
-                    inviteToken: inviteToken || null,
-                    partnerCode: formData.partnerCode.trim() || null,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    password: formData.password,
+                    orgName: formData.orgName,
+                    ...(inviteToken ? { inviteToken } : {}),
+                    ...(formData.partnerCode.trim() ? { partnerCode: formData.partnerCode.trim() } : {}),
                 })
+                
             });
            const data = await response.json();
-
+           console.log('register repose: ', data);
+                
             if (data.success) {
-                navigate.push('/partner');
+                setEmailSent(true);
             } else {
                 setSubmitError(data.error || 'Registration failed');
             }
@@ -293,8 +302,25 @@ export default function RegisterForm(){
                             </Button>
                         </Stack>
                     </Box>
+
+
                 </CardContent>
             </Card>
+            <Dialog open={emailSent} maxWidth="sm" fullWidth>
+                            <DialogTitle>Check Your Email</DialogTitle>
+                            <DialogContent>
+                                <Typography>
+                                    A verification email has been sent to {formData.email}. 
+                                    Please click the link to verify your account.
+                                    Your account is pending admin approval.
+                                </Typography>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button variant="contained" onClick={() => navigate.push('/login')}>
+                                    Go to Login
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
         </Box>
     );
 }

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { getStoredItem } from '@/lib/storage';
 
-const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit']);
+const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit','/verify-email']);
 
 function isPartnerRoute(pathname, orgId) {
 	return pathname === `/partners/${orgId}` || pathname === '/partner';
@@ -17,8 +18,8 @@ export default function RouteGuard({ children }) {
 	useEffect(() => {
 		setIsReady(false);
 
-		const role = localStorage.getItem('role');
-		const orgId = localStorage.getItem('orgId');
+		const role = getStoredItem('role');
+		const orgId = getStoredItem('orgId');
 		const isPublicRoute = PUBLIC_ROUTES.has(pathname);
 
 		if (!role && !isPublicRoute) {
