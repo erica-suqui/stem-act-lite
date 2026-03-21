@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "backend:dev": "python3 -m uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
+    "db:up": "docker compose -f db/docker-compose.yml up -d",
+    "db:down": "docker compose -f db/docker-compose.yml down",
     "user:create-super-admin": "node --env-file=.env.local scripts/create-super-admin.mjs",
     "db:seed-demo-events": "node --env-file=.env.local scripts/seed-demo-events.mjs",
-    "db:init": "node db/init.js",
-    "db:seed": "node db/seed.js"
+    "db:init": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "db:seed": "psql \"$DATABASE_URL\" -f db/seeds/mock-events.sql"
   },
   "dependencies": {
     "@changey/react-leaflet-markercluster": "^4.0.0-rc1",
