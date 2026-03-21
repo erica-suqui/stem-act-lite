@@ -106,7 +106,7 @@ export default function EventSubmissionForm({
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={2}>
-        <Typography variant="h6" component="div">
+        <Typography variant="h6" component="h2">
           Event Details
         </Typography>
 

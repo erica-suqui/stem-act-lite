@@ -29,7 +29,7 @@ async function getApprovedEvents() {
 export default async function HomePage() {
   const events = await getApprovedEvents();
   return (
-    <Box>
+    <Box component="main">
       <Box sx={{ bgcolor: 'primary.dark', color: 'white', pt: '8px', pb: 2, px: 3, textAlign: 'center', position: 'relative' }}>
         <Stack direction="row" sx={{ position: 'absolute', top: 8, left: 16 }} spacing={1}>
           <Link href="/submit" style={{ textDecoration: 'none' }}>

@@ -26,6 +26,7 @@ import { apiUrl } from '@/lib/api';
 import EventSubmissionForm from '@/app/components/EventSubmissionForm';
 import Toast from '@/app/components/Toast';
 import SignOutButton from '@/app/components/SignOutButton';
+import { getStoredItem,clearStoredAuth } from '@/lib/storage';
 
 const STATUS_CONFIG = {
   pending:  { color: 'warning',  label: 'Pending' },
@@ -46,8 +47,8 @@ export default function PartnerDashboard() {
 
   const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  const orgId = typeof window !== 'undefined' ? localStorage.getItem('orgId') : null;
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('userID') : null;
+  const orgId = typeof window !== 'undefined' ? getStoredItem('orgId') : null;
+  const userId = typeof window !== 'undefined' ? getStoredItem('userID') : null;
 
   const fetchEvents = useCallback(async () => {
     if (!orgId) return;

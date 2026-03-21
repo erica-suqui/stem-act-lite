@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { clearStoredAuth, getStoredItem } from '@/lib/storage';
 
 export default function NavLinks() {
 	const pathname = usePathname();
@@ -10,10 +11,10 @@ export default function NavLinks() {
 
 	useEffect(() => {
 		setIsMounted(true);
-		setRole(localStorage.getItem('role'));
+		setRole(getStoredItem('role'));
 	}, [pathname]);
 	const handleLogout = () => {
-		localStorage.clear();
+		clearStoredAuth();
 		window.location.href = '/';
 	};
 
@@ -58,7 +59,7 @@ export default function NavLinks() {
 	];
 
 	return (
-		<div className="nav-links">
+		<div aria-label="Main navigation" className="nav-links">
 			{links.map(link => {
 				const isActive = !link.external && pathname === link.href;
 				

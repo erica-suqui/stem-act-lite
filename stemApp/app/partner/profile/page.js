@@ -6,6 +6,7 @@ import {
   Button, Alert, Stack, Chip, CircularProgress,
 } from '@mui/material';
 import { apiUrl } from '@/lib/api';
+import { getStoredItem } from '@/lib/storage';
 
 export default function PartnerProfilePage() {
   const [orgStatus, setOrgStatus] = useState(null);
@@ -16,7 +17,7 @@ export default function PartnerProfilePage() {
   const [redeemError, setRedeemError] = useState('');
   const [redeemSuccess, setRedeemSuccess] = useState(false);
 
-  const orgId = typeof window !== 'undefined' ? localStorage.getItem('orgId') : null;
+  const orgId = typeof window !== 'undefined' ? getStoredItem('orgId') : null;
 
   useEffect(() => {
     if (!orgId) return;

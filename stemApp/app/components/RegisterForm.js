@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import {
   Box, Card, CardContent, Typography, TextField,
-  Button, Alert, Stack, CircularProgress
+  Button, Alert, Stack, CircularProgress, Dialog,DialogActions,DialogTitle,DialogContent
 } from '@mui/material';
 
 export default function RegisterForm(){
@@ -34,6 +34,8 @@ export default function RegisterForm(){
     const [codeStatus, setCodeStatus] = useState(null); // null | 'valid' | 'invalid'
     const [codeMessage, setCodeMessage] = useState('');
     const [codeOrgName, setCodeOrgName] = useState(null); // org name from code, if any
+
+    const [emailSent, setEmailSent] = useState(false);
 
     const registerSchema = z.object({
         firstName: z.string().min(1, "First name required"),
@@ -76,7 +78,7 @@ export default function RegisterForm(){
         if (!code) { setCodeStatus(null); return; }
         try {
             const res = await fetch(apiUrl(`/api/partner-codes/validate?code=${encodeURIComponent(code)}`));
-            const data = await res.json();
+            const data = await res.json();  
             if (data.valid) {
                 setCodeStatus('valid');
                 setCodeMessage('');
@@ -127,15 +129,22 @@ export default function RegisterForm(){
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
-                    inviteToken: inviteToken || null,
-                    partnerCode: formData.partnerCode.trim() || null,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    password: formData.password,
+                    orgName: formData.orgName,
+                    ...(inviteToken ? { inviteToken } : {}),
+                    ...(formData.partnerCode.trim() ? { partnerCode: formData.partnerCode.trim() } : {}),
                 })
+                
             });
            const data = await response.json();
-
+           console.log('register repose: ', data);
+                
             if (data.success) {
-                navigate.push('/partner');
+                setEmailSent(true);
             } else {
                 setSubmitError(data.error || 'Registration failed');
             }
@@ -168,22 +177,22 @@ export default function RegisterForm(){
     }
 
     return (
-        <Box sx={{
+        <Box component = "main"sx={{
             minHeight: '100vh', display: 'flex', alignItems: 'center',
             justifyContent: 'center', bgcolor: 'background.default', px: 2, py: 4,
         }}>
             <Card elevation={4} sx={{ width: '100%', maxWidth: 480, p: 2 }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                        <Button size="small" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
+                        <Button size="small" aria-label = "Exit regristration" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
                     </Box>
-                    <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+                    <Typography variant="h5" component = "h2" align="center" fontWeight={700} color="primary.dark" gutterBottom>
                         Partner Registration
                     </Typography>
                     <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
                         Create your organization account
                     </Typography>
-                    <Box component="form" onSubmit={handleFormSubmit} noValidate>
+                    <Box component="form" aria-label = "Registration Form" onSubmit={handleFormSubmit} noValidate>
                         <Stack spacing={2}>
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField
@@ -288,13 +297,30 @@ export default function RegisterForm(){
                                 inputProps={{ style: { textTransform: 'uppercase' } }}
                             />
                             {submitError && <Alert severity="error">{submitError}</Alert>}
-                            <Button type="submit" variant="contained" fullWidth size="large">
+                            <Button type="submit" variant="contained" aria-label = "Register the organization"fullWidth size="large">
                                 Register
                             </Button>
                         </Stack>
                     </Box>
+
+
                 </CardContent>
             </Card>
+            <Dialog open={emailSent} maxWidth="sm" fullWidth>
+                            <DialogTitle>Check Your Email</DialogTitle>
+                            <DialogContent>
+                                <Typography>
+                                    A verification email has been sent to {formData.email}. 
+                                    Please click the link to verify your account.
+                                    Your account is pending admin approval.
+                                </Typography>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button variant="contained" onClick={() => navigate.push('/login')}>
+                                    Go to Login
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
         </Box>
     );
 }

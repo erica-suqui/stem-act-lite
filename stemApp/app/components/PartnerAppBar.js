@@ -2,18 +2,19 @@
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useRouter } from 'next/navigation';
+import { clearStoredAuth } from '@/lib/storage';
 
 export default function PartnerAppBar() {
   const router = useRouter();
   const handleLogout = () => {
-    localStorage.clear();
+    clearStoredAuth();
     router.push('/login');
   };
 
   return (
-    <AppBar position="static" sx={{ bgcolor: 'primary.dark' }}>
+    <AppBar aria-label = "Partner Navigation" position="static" sx={{ bgcolor: 'primary.dark' }}>
       <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1, color: 'white', fontWeight: 700 }}>
+        <Typography variant="h6"  component="h1" sx={{ flexGrow: 1, color: 'white', fontWeight: 700 }}>
           STEM-ACT
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

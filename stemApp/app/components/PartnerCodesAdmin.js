@@ -74,7 +74,7 @@ export default function PartnerCodesAdmin() {
 
   return (
     <Box>
-      <Typography variant="h6" fontWeight={600} gutterBottom>Partner Access Codes</Typography>
+      <Typography variant="h6"  component="h2" fontWeight={600} gutterBottom>Partner Access Codes</Typography>
 
       {/* Create org */}
       <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
@@ -117,7 +117,7 @@ export default function PartnerCodesAdmin() {
             ))}
           </Select>
         </FormControl>
-        <Button variant="contained" onClick={handleGenerate}>Generate Code</Button>
+        <Button variant="contained" onClick={handleGenerate} aria-label="Generate new partner access code">Generate Code</Button>
       </Stack>
 
       {newCode && (
@@ -128,7 +128,7 @@ export default function PartnerCodesAdmin() {
       {generateError && <Alert severity="error" sx={{ mb: 2 }}>{generateError}</Alert>}
 
       <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+        <Table size="small" aria-label="Partner access codes">
           <TableHead>
             <TableRow>
               <TableCell>Code</TableCell>
@@ -154,7 +154,7 @@ export default function PartnerCodesAdmin() {
                 <TableCell>{c.consumed_by_org || '—'}</TableCell>
                 <TableCell>
                   {c.status === 'active' && (
-                    <Button size="small" color="error" onClick={() => handleRevoke(c.code_id)}>
+                    <Button size="small" color="error" onClick={() => handleRevoke(c.code_id)} aria-label={`Revoke code ${c.code}`}>
                       Revoke
                     </Button>
                   )}

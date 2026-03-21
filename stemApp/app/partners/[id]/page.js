@@ -3,6 +3,7 @@ import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { formatDate, formatFullName, formatTimeRange } from '@/lib/utils';
 import pool from '@/lib/db';
 import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
+import  SendMessageButton  from '@/app/components/SendMessage'
 
 const STATUS_META = {
 	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
@@ -67,6 +68,12 @@ async function getOrganization(orgId) {
 		),
 	};
 }
+
+const formatPhone = (phone) => {
+    if (!phone) return '—';
+    const digits = phone.replace(/\D/g, '');
+    return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`;
+};
 
 async function getOrganizationEvents(orgId) {
 	const tagsEnabled = await hasEventTagTables();
@@ -143,25 +150,33 @@ export default async function PartnerDetailPage({ params }) {
 
 			<div className="org-detail-card">
 				<dl className="org-detail-grid">
-					<dt>Contact Name</dt>
-					<dd>{org.contact_name}</dd>
+					<dt><strong>Contact Name: </strong> {org.contact_name} </dt>
 
-					<dt>Email</dt>
-					<dd>
-						<a href={`mailto:${org.contact_email}`}>{org.contact_email}</a>
-					</dd>
+					<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+						<dt><strong>Email:</strong></dt>
+						<dd>
+							<a href={`mailto:${org.contact_email}`}>{org.contact_email}</a>
+						</dd>
+					</div>
 
-					<dt>Phone</dt>
-					<dd>{org.contact_phone || '—'}</dd>
-
-					<dt>Status</dt>
+					<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+					<dt><strong>Phone:</strong></dt>
+					<dd>{formatPhone(org.contact_phone)}</dd>
+					</div>
+					
+					<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+					<dt><strong>Status: </strong></dt>
 					<dd>
 						<span className={`status-badge status-${org.status}`}>
 							{org.status.charAt(0).toUpperCase() + org.status.slice(1)}
 						</span>
 					</dd>
+					</div>
 				</dl>
+				<SendMessageButton orgId={org.org_id} orgName={org.org_name} />
+
 			</div>
+
 
 			<h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '2rem 0 1rem', color: '#1a1a2e' }}>
 				Event Submissions
@@ -169,23 +184,22 @@ export default async function PartnerDetailPage({ params }) {
 
 			<div className="stats-grid">
 				<div className="stat-card stat-total">
-					<span className="stat-number">{events.length}</span>
+					<span className="stat-number">{events.length+" "}</span>
 					<span className="stat-label">Total</span>
 				</div>
 				<div className="stat-card stat-pending">
-					<span className="stat-number">{pending}</span>
+					<span className="stat-number">{pending+" "}</span>
 					<span className="stat-label">Pending</span>
 				</div>
 				<div className="stat-card stat-approved">
-					<span className="stat-number">{approved}</span>
+					<span className="stat-number">{approved+" "}</span>
 					<span className="stat-label">Approved</span>
 				</div>
 				<div className="stat-card stat-denied">
-					<span className="stat-number">{denied}</span>
+					<span className="stat-number">{denied + " "}</span>
 					<span className="stat-label">Denied</span>
 				</div>
 			</div>
-
 			{events.length === 0 ? (
 				<p className="no-data" style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
 					This organization has not submitted any events yet.

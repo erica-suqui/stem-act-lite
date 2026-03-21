@@ -63,6 +63,8 @@ export default function EventsMap({ events }) {
         center={[41.6, -72.7]}
         zoom={9}
         style={{ height: '100%', width: '100%' }}
+        aria-label="Map of STEM events in Connecticut"
+
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -97,7 +99,9 @@ export default function EventsMap({ events }) {
                   {safeHref && (
                     <>
                       <br />
-                      <a href={safeHref} target="_blank" rel="noopener noreferrer">
+                      <a href={safeHref} target="_blank" rel="noopener noreferrer"
+                      aria-label={`More info about ${event.title} (opens in new tab)`}>
+
                         More Info →
                       </a>
                     </>

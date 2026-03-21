@@ -494,6 +494,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                                 size="small"
                                 disabled={sendingComment === event.event_id || !commentInputs[event.event_id]?.trim()}
                                 onClick={() => handleAdminComment(event.event_id)}
+                                aria-label={`Send reply to ${event.title}`}
                               >
                                 Send
                               </Button>

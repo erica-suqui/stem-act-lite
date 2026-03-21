@@ -5,9 +5,10 @@ import React, { useState } from 'react';
 import * as z from 'zod';
 import { apiUrl } from '@/lib/api';
 import {
-  Box, Card, CardContent, Typography, TextField,
-  Button, Alert, Stack
+  Box, Card, CardContent, Checkbox, Typography, TextField,
+  Button, Alert, Stack, FormControlLabel
 } from '@mui/material';
+
 import Link from 'next/link';
 
 
@@ -27,6 +28,8 @@ export default function LogIn(){
         email: z.string().email().min(1,"Missing Email"),
         password: z.string().min(1,"Missing Password")
     });
+
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleChange = (e) => {
         const {name,value } = e.target;
@@ -63,9 +66,10 @@ export default function LogIn(){
             const data = await response.json();
 
             if (data.success) {
-                localStorage.setItem('userID', data.userID);
-                localStorage.setItem('role', data.role);
-                localStorage.setItem('orgId', data.orgId);
+                const storage = rememberMe ? localStorage : sessionStorage;
+                storage.setItem('userID', data.userID);
+                storage.setItem('role', data.role);
+                storage.setItem('orgId', data.orgId);
                 const roleRoutes = {
                     partner: '/partner',
                     admin: '/superAdminDashboard',
@@ -90,13 +94,13 @@ export default function LogIn(){
 
 
     return (
-      <Box sx={{
+      <Box component = "main" sx={{
         minHeight: '100vh', display: 'flex', alignItems: 'center',
         justifyContent: 'center', bgcolor: 'background.default', px: 2,
       }}>
         <Card elevation={4} sx={{ width: '100%', maxWidth: 420, p: 2 }}>
           <CardContent>
-            <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+            <Typography variant="h5" component = "h1"align="center" fontWeight={700} color="primary.dark" gutterBottom>
               Sign In
             </Typography>
             <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -132,9 +136,20 @@ export default function LogIn(){
                   helperText={errors.password?._errors?.[0]}
                 />
                 {loginError && <Alert severity="error">{loginError}</Alert>}
+                <FormControlLabel
+                    control={
+                        <Checkbox 
+                            checked={rememberMe}
+                            onChange={e => setRememberMe(e.target.checked)}
+                        />
+                    }
+                    label="Remember Me"
+                />
+
                 <Button type="submit" variant="contained" fullWidth size="large">
                   Log In
                 </Button>
+        
                 <Typography variant="body2" align="center" color="text.secondary">
                   <Link href="/forgot-password" style={{ color: 'inherit' }}>Forgot password?</Link>
                 </Typography>
@@ -149,3 +164,4 @@ export default function LogIn(){
       </Box>
     );
 }
+
