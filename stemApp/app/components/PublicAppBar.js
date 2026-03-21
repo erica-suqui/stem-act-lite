@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function PublicAppBar() {
   return (
-    <AppBar position="static" sx={{ bgcolor: 'primary.dark' }}>
+    <AppBar position="static" aria-label = "Public navigation" sx={{ bgcolor: 'primary.dark' }}>
       <Toolbar>
         <Typography
           variant="h6"

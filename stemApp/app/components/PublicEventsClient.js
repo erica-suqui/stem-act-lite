@@ -60,7 +60,7 @@ export default function PublicEventsClient({ events }) {
 
   return (
     <Box sx={{ position: 'relative' }}>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+      <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Cards" />
         <Tab label="Map" />
       </Tabs>
@@ -140,7 +140,7 @@ export default function PublicEventsClient({ events }) {
         </FormControl>
 
         {hasFilters && (
-          <Button variant="text" onClick={clearFilters}>Clear Filters</Button>
+          <Button variant="text" aria-label="Clear all filters" onClick={clearFilters}>Clear Filters</Button>
         )}
 
         <Typography
@@ -167,7 +167,7 @@ export default function PublicEventsClient({ events }) {
               <Grid item xs={12} sm={6} md={4} key={event.event_id}>
                 <Card elevation={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ lineHeight: 1.3 }}>
+                    <Typography variant="h6" component="h2" gutterBottom sx={{ lineHeight: 1.3 }}>
                       {event.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -238,11 +238,11 @@ export default function PublicEventsClient({ events }) {
         </DialogContent>
         <DialogActions>
           {selectedEvent?.hyperlink && (
-            <Button component={Link} href={selectedEvent.hyperlink} target="_blank" rel="noopener noreferrer" variant="contained">
+            <Button component={Link} aria-label={`Visit event page for ${selectedEvent?.title} (opens in new tab)`} href={selectedEvent.hyperlink} target="_blank" rel="noopener noreferrer" variant="contained">
               Event Link
             </Button>
           )}
-          <Button onClick={() => setSelectedEvent(null)}>Close</Button>
+          <Button onClick={() => setSelectedEvent(null)} aria-label="Close event details">Close</Button>
         </DialogActions>
       </Dialog>
 

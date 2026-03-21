@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { getStoredItem } from '@/lib/storage';
+import { getStoredItem,clearStoredAuth } from '@/lib/storage';
 
 const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit','/verify-email']);
 
@@ -29,7 +29,7 @@ export default function RouteGuard({ children }) {
 
 		if (role === 'partner') {
 			if (!orgId) {
-				localStorage.clear();
+				clearStoredAuth();
 				router.replace('/');
 				return;
 			}

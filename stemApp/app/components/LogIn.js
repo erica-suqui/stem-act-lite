@@ -94,13 +94,13 @@ export default function LogIn(){
 
 
     return (
-      <Box sx={{
+      <Box component = "main" sx={{
         minHeight: '100vh', display: 'flex', alignItems: 'center',
         justifyContent: 'center', bgcolor: 'background.default', px: 2,
       }}>
         <Card elevation={4} sx={{ width: '100%', maxWidth: 420, p: 2 }}>
           <CardContent>
-            <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+            <Typography variant="h5" component = "h1"align="center" fontWeight={700} color="primary.dark" gutterBottom>
               Sign In
             </Typography>
             <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>

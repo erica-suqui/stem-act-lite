@@ -47,9 +47,9 @@ export default function AdminNav({ children }) {
   // Admin layout
   return (
     <RouteGuard>
-      <AppBar position="fixed" sx={{ bgcolor: 'primary.dark', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar position="fixed" component="header" aria-label="Admin navigation" sx={{ bgcolor: 'primary.dark', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
+          <Typography variant="h6"  component="h1"  sx={{ color: 'white', fontWeight: 700 }}>
             STEM-ACT
           </Typography>
         </Toolbar>

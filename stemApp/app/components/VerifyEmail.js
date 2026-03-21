@@ -61,7 +61,7 @@ export default function VerifiedEmail(){
                     </>
                 ) :(
                     <Alert severity="error">
-                        {error ||  'Vertification failed'}
+                        {error ||  'Verification failed'}
                     </Alert>
 
                 ) }

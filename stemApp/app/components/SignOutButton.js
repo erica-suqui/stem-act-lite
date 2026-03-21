@@ -2,19 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@mui/material';
+import { clearStoredAuth } from '@/lib/storage';
 
 export default function SignOutButton() {
   const router = useRouter();
 
   const handleSignOut = () => {
-    localStorage.removeItem('userID');
-    localStorage.removeItem('role');
-    localStorage.removeItem('orgId');
+    clearStoredAuth();
     router.push('/login');
   };
 
   return (
-    <Button variant="outlined" size="small" onClick={handleSignOut}>
+    <Button variant="outlined" aria-label = "Log Out of Account"size="small" onClick={handleSignOut}>
       Sign Out
     </Button>
   );

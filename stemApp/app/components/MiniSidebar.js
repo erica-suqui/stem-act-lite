@@ -9,6 +9,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { clearStoredAuth } from '@/lib/storage';
 
 const COLLAPSED_WIDTH = 65;
 const EXPANDED_WIDTH = 240;
@@ -25,7 +26,7 @@ export default function MiniSidebar({ children }) {
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.clear();
+    clearStoredAuth();
     router.push('/login');
   };
 
@@ -33,6 +34,7 @@ export default function MiniSidebar({ children }) {
     <Box sx={{ display: 'flex' }}>
       <Drawer
         variant="permanent"
+        aria-label="Main navigation"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         sx={{
@@ -59,6 +61,7 @@ export default function MiniSidebar({ children }) {
                 <ListItemButton
                   onClick={() => router.push(href)}
                   selected={active}
+                  aria-current={active ? 'page' : undefined}
                   sx={{
                     minHeight: 48,
                     justifyContent: open ? 'initial' : 'center',
@@ -84,6 +87,7 @@ export default function MiniSidebar({ children }) {
         <Tooltip title={open ? '' : 'Logout'} placement="right">
           <ListItemButton
             onClick={handleLogout}
+            aria-current={active ? 'page' : undefined}
             sx={{
               minHeight: 48,
               justifyContent: open ? 'initial' : 'center',

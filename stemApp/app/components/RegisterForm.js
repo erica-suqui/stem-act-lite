@@ -177,22 +177,22 @@ export default function RegisterForm(){
     }
 
     return (
-        <Box sx={{
+        <Box component = "main"sx={{
             minHeight: '100vh', display: 'flex', alignItems: 'center',
             justifyContent: 'center', bgcolor: 'background.default', px: 2, py: 4,
         }}>
             <Card elevation={4} sx={{ width: '100%', maxWidth: 480, p: 2 }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                        <Button size="small" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
+                        <Button size="small" aria-label = "Exit regristration" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
                     </Box>
-                    <Typography variant="h5" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+                    <Typography variant="h5" component = "h2" align="center" fontWeight={700} color="primary.dark" gutterBottom>
                         Partner Registration
                     </Typography>
                     <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
                         Create your organization account
                     </Typography>
-                    <Box component="form" onSubmit={handleFormSubmit} noValidate>
+                    <Box component="form" aria-label = "Registration Form" onSubmit={handleFormSubmit} noValidate>
                         <Stack spacing={2}>
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField
@@ -297,7 +297,7 @@ export default function RegisterForm(){
                                 inputProps={{ style: { textTransform: 'uppercase' } }}
                             />
                             {submitError && <Alert severity="error">{submitError}</Alert>}
-                            <Button type="submit" variant="contained" fullWidth size="large">
+                            <Button type="submit" variant="contained" aria-label = "Register the organization"fullWidth size="large">
                                 Register
                             </Button>
                         </Stack>

@@ -59,7 +59,7 @@ export default function NavLinks() {
 	];
 
 	return (
-		<div className="nav-links">
+		<div aria-label="Main navigation" className="nav-links">
 			{links.map(link => {
 				const isActive = !link.external && pathname === link.href;
 				

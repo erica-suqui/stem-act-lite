@@ -127,7 +127,7 @@ export default function SubmitPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 700, mx: 'auto', p: 3 }}>
+    <Box  component = "main" sx={{ maxWidth: 700, mx: 'auto', p: 3 }} >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h4">Submit a STEM Event</Typography>
         <Button component={Link} href="/" variant="outlined" size="small">
@@ -140,7 +140,7 @@ export default function SubmitPage() {
 
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Stack spacing={2}>
-          <Typography variant="h6" gutterBottom>Your Contact Information</Typography>
+          <Typography variant="h6"  gutterBottom component="h2">Your Contact Information</Typography>
 
           <TextField
             label="Your Name"
@@ -175,7 +175,7 @@ export default function SubmitPage() {
             helperText={errors.submitter_phone || '10 digits, no dashes'}
           />
 
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Event Details</Typography>
+          <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 3 }}>Event Details</Typography>
 
           {serverError && (
             <Alert severity="error">{serverError}</Alert>

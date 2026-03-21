@@ -173,6 +173,10 @@ class PublicRegisterRequest(BaseModel):
     email: str = Field(min_length=1)
     password: str = Field(min_length=8)
 
+class RequestMessage(BaseModel):
+    org_id: None
+    message: str = Field(min_length=1)
+
 
 def generate_partner_code() -> str:
     """Generate a short, hard-to-guess partner code like STEM-A3X9."""
@@ -483,6 +487,27 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     db.commit()
     return JSONResponse({"valid": True, "message": "Email verified successfully"})
 
+
+@app.post("/api/sendAMessage")
+def sendMessage(payload:RequestMessage, background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
+    org = db.execute(
+        text("SELECT contact_email, org_name FROM organizations WHERE org_id = :org_id"),
+        {"org_id": payload.org_id}
+    ).mappings().first()
+    msg  = payload.message
+
+    if org is None:
+        return JSONResponse({"success": False, "error": "Organization not Found"},status_code=404)
+    
+    try:
+        background_tasks.add_task(
+        send_email,
+        org["contact_email"],
+        "Message from STEM-ACT Admin",
+        msg)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+         return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
 
 
 @app.post("/api/register/public")
