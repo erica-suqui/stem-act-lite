@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   user_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   email     TEXT NOT NULL UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
   role      TEXT NOT NULL
            CHECK (role IN ('super_admin','admin','partner'))
 );
@@ -129,6 +130,14 @@ CREATE TABLE IF NOT EXISTS invitations (
   expires_at     TIMESTAMPTZ NOT NULL,
   consumed_at    TIMESTAMPTZ NULL,
   created_by_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  token          TEXT PRIMARY KEY,
+  user_id        BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  expires_at     TIMESTAMPTZ NOT NULL,
+  used_at        TIMESTAMPTZ NULL,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
