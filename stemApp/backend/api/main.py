@@ -79,6 +79,39 @@ def _geocode_event(event_id: int, address: str, city: str):
         logger.error(f"Geocoding failed for event {event_id}: {exc}")
 
 
+def _has_event_geocode_columns(db: Session) -> bool:
+    result = db.execute(
+        text(
+            """
+            SELECT
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'lat'
+                ) AS has_lat,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'lng'
+                ) AS has_lng,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'geocoded_at'
+                ) AS has_geocoded_at
+            """
+        )
+    ).mappings().first()
+
+    return bool(result and result["has_lat"] and result["has_lng"] and result["has_geocoded_at"])
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -551,6 +584,7 @@ def register_public(payload: PublicRegisterRequest, db: Session = Depends(get_db
 
 @app.get("/api/events")
 def list_events(org_id: int = None, status: str = None, db: Session = Depends(get_db)):
+    has_geocode_columns = _has_event_geocode_columns(db)
     conditions = []
     params = {}
     if org_id:
@@ -560,11 +594,16 @@ def list_events(org_id: int = None, status: str = None, db: Session = Depends(ge
         conditions.append("status = :status")
         params["status"] = status
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    geocode_fields = (
+        "lat, lng, geocoded_at"
+        if has_geocode_columns
+        else "NULL::DOUBLE PRECISION AS lat, NULL::DOUBLE PRECISION AS lng, NULL::TIMESTAMPTZ AS geocoded_at"
+    )
     result = db.execute(text(f"""
         SELECT event_id, org_id, submitter_name, submitter_email, title, description,
                start_datetime, end_datetime, address, city, county, audience, cost,
                hyperlink, event_contact, status, admin_comment, created_at,
-               lat, lng, geocoded_at
+               {geocode_fields}
         FROM events {where} ORDER BY created_at DESC
     """), params)
     events = [dict(row) for row in result.mappings().all()]
@@ -669,9 +708,10 @@ def approve_event(event_id: int, background_tasks: BackgroundTasks, db: Session 
     )
     db.commit()
 
-    background_tasks.add_task(
-        _geocode_event, event_id, event_row["address"], event_row["city"]
-    )
+    if _has_event_geocode_columns(db):
+        background_tasks.add_task(
+            _geocode_event, event_id, event_row["address"], event_row["city"]
+        )
 
     if event_row["submitter_email"]:
         background_tasks.add_task(
