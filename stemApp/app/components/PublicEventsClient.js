@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box, Grid, Card, CardContent, CardActions,Typography,
   Button, Select, MenuItem, FormControl, InputLabel, Chip, Stack,
@@ -11,6 +11,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
 const EventsMap = dynamic(() => import('./EventsMap'), { ssr: false });
 
@@ -20,6 +21,9 @@ const CT_COUNTIES = [
 ];
 
 export default function PublicEventsClient({ events }) {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [liveEvents, setLiveEvents] = useState(events);
   const [county, setCounty] = useState('');
   const [audience, setAudience] = useState('');
   const [tab, setTab] = useState(0); // 0 = Cards, 1 = Map
@@ -29,13 +33,34 @@ export default function PublicEventsClient({ events }) {
   const [endDate, setEndDate] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const audiences = useMemo(() => {
-    const vals = events.map(e => e.audience).filter(Boolean);
-    return [...new Set(vals)].sort();
+  useEffect(() => {
+    setLiveEvents(events);
   }, [events]);
 
-  const filtered = useMemo(() => events.filter(e => {
+  useEffect(() => {
+    function refreshPageData() {
+      router.refresh();
+    }
+
+    const intervalId = window.setInterval(refreshPageData, 15000);
+    window.addEventListener('focus', refreshPageData);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshPageData);
+    };
+  }, [router]);
+
+  const audiences = useMemo(() => {
+    const vals = liveEvents.map(e => e.audience).filter(Boolean);
+    return [...new Set(vals)].sort();
+  }, [liveEvents]);
+
+  const filtered = useMemo(() => liveEvents.filter(e => {
 
     if (county && e.county !== county) return false;
     if (audience && e.audience !== audience) return false;
@@ -50,13 +75,10 @@ export default function PublicEventsClient({ events }) {
     if (cost === 'Free' && e.cost !== 'Free') return false;
     if (cost === 'Paid' && e.cost === 'Free') return false;
     return true;
-  }), [events, county, audience, search, cost, startDate, endDate ]);
+  }), [liveEvents, county, audience, search, cost, startDate, endDate ]);
 
   const clearFilters = () => { setCounty(''); setAudience(''); setSearch(''); setCost(''); setStartDate(dayjs()); setEndDate(null)};
   const hasFilters = county || audience || search || cost || startDate || endDate;
-
-
-  console.log('selected event:', selectedEvent);
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -65,25 +87,26 @@ export default function PublicEventsClient({ events }) {
         <Tab label="Map" />
       </Tabs>
 
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-      
-      <DatePicker
-        label="From"
-        value={startDate}
-        onChange={(newValue) => setStartDate(newValue)}
-        disablePast
-        slotProps={{ textField: { size: 'small' }, popper: { sx: { zIndex: 9999 } }}}
-      />
-      <DatePicker
-        label="To"
-        value={endDate}
-        onChange={(newValue) => setEndDate(newValue)}
-        minDate={startDate || dayjs()}
-        slotProps={{ textField: { size: 'small' }, popper: { sx: { zIndex: 9999 }}}}
-      />
-    </LocalizationProvider>
-    </Stack>
+      {mounted && (
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="From"
+              value={startDate}
+              onChange={(newValue) => setStartDate(newValue)}
+              disablePast
+              slotProps={{ textField: { size: 'small', id: 'public-events-from-date' }, popper: { sx: { zIndex: 9999 } }}}
+            />
+            <DatePicker
+              label="To"
+              value={endDate}
+              onChange={(newValue) => setEndDate(newValue)}
+              minDate={startDate || dayjs()}
+              slotProps={{ textField: { size: 'small', id: 'public-events-to-date' }, popper: { sx: { zIndex: 9999 }} }}
+            />
+          </LocalizationProvider>
+        </Stack>
+      )}
 
       <Stack direction={{ xs: 'column', sm: 'row' }} 
         spacing={2} 
