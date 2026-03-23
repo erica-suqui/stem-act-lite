@@ -155,7 +155,7 @@ export default async function PartnerDetailPage({ params }) {
 					<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
 						<dt><strong>Email:</strong></dt>
 						<dd>
-							<a href={`mailto:${org.contact_email}`}>{org.contact_email}</a>
+							<a href={`mailto:${org.contact_email}`} aria-label={`Email ${org.org_name} at ${org.contact_email}`}>{org.contact_email}</a>
 						</dd>
 					</div>
 
@@ -184,7 +184,7 @@ export default async function PartnerDetailPage({ params }) {
 
 			<div className="stats-grid">
 				<div className="stat-card stat-total">
-					<span className="stat-number">{events.length+" "}</span>
+					<span className="stat-number" aria-label={`${events.length} total events`}>{events.length+" "}</span>
 					<span className="stat-label">Total</span>
 				</div>
 				<div className="stat-card stat-pending">

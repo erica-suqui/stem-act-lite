@@ -61,7 +61,6 @@ export default function MiniSidebar({ children }) {
                 <ListItemButton
                   onClick={() => router.push(href)}
                   selected={active}
-                  aria-current={active ? 'page' : undefined}
                   sx={{
                     minHeight: 48,
                     justifyContent: open ? 'initial' : 'center',
@@ -87,7 +86,7 @@ export default function MiniSidebar({ children }) {
         <Tooltip title={open ? '' : 'Logout'} placement="right">
           <ListItemButton
             onClick={handleLogout}
-            aria-current={active ? 'page' : undefined}
+            aria-label="Logout"
             sx={{
               minHeight: 48,
               justifyContent: open ? 'initial' : 'center',

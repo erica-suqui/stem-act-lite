@@ -24,6 +24,7 @@ export default function PartnerAppBar() {
           <Button
             onClick={handleLogout}
             startIcon={<LogoutIcon />}
+            aria-label="Logout"
             sx={{ color: 'white' }}
           >
             Logout

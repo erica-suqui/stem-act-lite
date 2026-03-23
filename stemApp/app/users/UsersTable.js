@@ -108,7 +108,8 @@ const { toasts, addToast, dismissToast } = useToast();
           return (
             <Grid item xs={6} sm={3} key={key}>
               <Card elevation={isActive ? 4 : 1} sx={{ border: isActive ? 2 : 1, borderColor: isActive ? color : 'divider' }}>
-                <CardActionArea onClick={() => setRoleFilter(filterValue)} aria-pressed={isActive} sx={{ p: 2, textAlign: 'center' }}>
+                <CardActionArea onClick={() => setRoleFilter(filterValue)}      aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()}`}
+                  aria-pressed={isActive} sx={{ p: 2, textAlign: 'center' }}>
                   <CardContent sx={{ p: 0 }}>
                     <Typography variant="h4" fontWeight={700} color={color}>{stats[key]}</Typography>
                     <Typography variant="body2" color="text.secondary">{label}</Typography>
@@ -156,7 +157,7 @@ const { toasts, addToast, dismissToast } = useToast();
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.dark' }}>
               {['Email', 'Role', 'Organization', 'Actions'].map(h => (
-                <TableCell key={h} sx={{ color: 'white', fontWeight: 600 }}>{h}</TableCell>
+                <TableCell key={h} scope="col" sx={{ color: 'white', fontWeight: 600 }}>{h}</TableCell>
               ))}
             </TableRow>
           </TableHead>
