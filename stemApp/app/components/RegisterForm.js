@@ -168,7 +168,7 @@ export default function RegisterForm(){
             <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
                 <Card elevation={4} sx={{ maxWidth: 420, width: '100%', p: 2 }}>
                     <CardContent>
-                        <Typography variant="h6" color="error" gutterBottom>Invitation Error</Typography>
+                        <Typography variant="h6" component="h1" color="error" gutterBottom>Invitation Error</Typography>
                         <Alert severity="error">{tokenError}</Alert>
                     </CardContent>
                 </Card>
@@ -186,7 +186,7 @@ export default function RegisterForm(){
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                         <Button size="small" aria-label = "Exit regristration" variant="text" onClick={() => navigate.push('/')}>✕ Exit</Button>
                     </Box>
-                    <Typography variant="h5" component = "h2" align="center" fontWeight={700} color="primary.dark" gutterBottom>
+                    <Typography variant="h5" component = "h1" align="center" fontWeight={700} color="primary.dark" gutterBottom>
                         Partner Registration
                     </Typography>
                     <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -316,7 +316,7 @@ export default function RegisterForm(){
                                 </Typography>
                             </DialogContent>
                             <DialogActions>
-                                <Button variant="contained" onClick={() => navigate.push('/login')}>
+                                <Button variant="contained"  aria-label="Go to login page" onClick={() => navigate.push('/login')}>
                                     Go to Login
                                 </Button>
                             </DialogActions>

@@ -110,6 +110,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
                 <CardActionArea
                   onClick={() => setStatusFilter(filterValue)}
                   aria-pressed={isActive}
+                  aria-label = {`Filter by ${label} - ${stats[key]} ${label.toLowerCase()} organization${stats[key] !== 1 ? 's' : ''}`}
                   sx={{ p: 2, textAlign: 'center' }}
                 >
                   <CardContent sx={{ p: 0 }}>
@@ -136,7 +137,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
         <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
           {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
         </Typography>
-        <Button variant="contained" size="small" onClick={() => setAddOrgOpen(true)}>
+        <Button variant="contained" size="small" aria-label = "Add an Organization" onClick={() => setAddOrgOpen(true)}>
           + Add Organization
         </Button>
       </Stack>
