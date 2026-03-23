@@ -30,8 +30,8 @@ export default async function HomePage() {
   const events = await getApprovedEvents();
   return (
     <Box component="main">
-      <Box sx={{ bgcolor: 'primary.dark', color: 'white', pt: '8px', pb: 2, px: 3, textAlign: 'center' }}>
-        <Stack direction="row" justifyContent="center" spacing={1} sx={{ mb: 1 }}>
+      <Box sx={{ bgcolor: 'primary.dark', color: 'white', pt: '8px', pb: 2, px: 3, textAlign: 'center', position: 'relative' }}>
+        <Stack direction="row" sx={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 16 }} spacing={1}>
           <Link href="/submit" style={{ textDecoration: 'none' }}>
             <Button variant="outlined" size="small"
               sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
@@ -44,6 +44,8 @@ export default async function HomePage() {
               Become a Partner
             </Button>
           </Link>
+        </Stack>
+        <Stack direction="row" sx={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 16 }} spacing={1}>
           <Link href="/login" style={{ textDecoration: 'none' }}>
             <Button variant="outlined" size="small"
               sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
