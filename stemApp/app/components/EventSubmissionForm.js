@@ -22,6 +22,17 @@ const CT_COUNTIES = [
   'New Haven','New London','Tolland','Windham',
 ];
 
+const EVENT_TYPES = [
+  'Workshop',
+  'Field Trip',
+  'Conference',
+  'Camp',
+  'Competition',
+  'Lecture',
+  'Community Event',
+  'Other',
+];
+
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -34,6 +45,7 @@ const eventSchema = z.object({
   cost: z.string().optional(),
   hyperlink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   event_contact: z.string().email('Must be a valid email').optional().or(z.literal('')),
+  event_type: z.string().optional(),
 });
 
 const EMPTY_FORM = {
@@ -48,6 +60,7 @@ const EMPTY_FORM = {
   cost: '',
   hyperlink: '',
   event_contact: '',
+  event_type: '',
 };
 
 export default function EventSubmissionForm({
@@ -60,6 +73,7 @@ export default function EventSubmissionForm({
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [flyerFile, setFlyerFile] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,7 +106,7 @@ export default function EventSubmissionForm({
 
     setIsSubmitting(true);
     try {
-      const response = await onSubmit(result.data);
+      const response = await onSubmit(result.data, flyerFile);
       if (response && !response.success) {
         setServerError(response.message || 'An error occurred. Please try again.');
       }
@@ -248,6 +262,39 @@ export default function EventSubmissionForm({
           error={Boolean(errors.event_contact)}
           helperText={errors.event_contact}
         />
+
+        <FormControl fullWidth>
+          <InputLabel id="event-type-label">Event Type</InputLabel>
+          <Select
+            labelId="event-type-label"
+            id="event-type-select"
+            name="event_type"
+            value={formData.event_type}
+            label="Event Type"
+            onChange={handleChange}
+          >
+            <MenuItem value="">— Select a type —</MenuItem>
+            {EVENT_TYPES.map((type) => (
+              <MenuItem key={type} value={type}>{type}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            Flyer (PDF, JPG, or PNG — max 10MB)
+          </Typography>
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => setFlyerFile(e.target.files?.[0] || null)}
+          />
+          {flyerFile && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Selected: {flyerFile.name}
+            </Typography>
+          )}
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
           {onCancel && (
