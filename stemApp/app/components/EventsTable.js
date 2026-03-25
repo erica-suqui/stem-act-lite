@@ -166,7 +166,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
     }
   }, []);
 
-  const handleAdminAddEvent = useCallback(async (formData) => {
+  const handleAdminAddEvent = useCallback(async (formData, flyerFile) => {
     try {
       const submitRes = await fetch(apiUrl('/api/events'), {
         method: 'POST',
@@ -177,6 +177,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
       if (!submitData.success) return { success: false, message: submitData.message };
 
       const eventId = submitData.event_id;
+      if (flyerFile) {
+        const form = new FormData();
+        form.append('file', flyerFile);
+        await fetch(apiUrl(`/api/events/${eventId}/flyer`), { method: 'POST', body: form });
+      }
       const approveRes = await fetch(apiUrl(`/api/events/${eventId}/approve`), { method: 'POST' });
       const approveData = await approveRes.json();
       if (!approveData.success) return { success: false, message: 'Event created but approval failed.' };
@@ -314,7 +319,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
         <Table size="small" aria-label={`${isPartnerTab ? 'Partner' : 'Viewer'} event submissions`}>
           <TableHead>
             <TableRow sx={{ bgcolor: 'grey.50' }}>
-              {['EVENT', 'DATE & TIME', 'LOCATION', 'AUDIENCE', 'COST', 'SUBMITTED', 'ACTIONS'].map(h => (
+              {['EVENT', 'TYPE', 'DATE & TIME', 'LOCATION', 'AUDIENCE', 'COST', 'SUBMITTED', 'ACTIONS'].map(h => (
                 <TableCell
                   key={h}
                   sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.secondary', letterSpacing: 0.5, whiteSpace: 'nowrap', py: 1.25 }}
@@ -347,6 +352,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                           </a>
                         </Typography>
                       )}
+                    </TableCell>
+
+                    {/* TYPE */}
+                    <TableCell>
+                      <Typography variant="body2">{event.event_type || '—'}</Typography>
                     </TableCell>
 
                     {/* DATE & TIME */}
@@ -447,11 +457,21 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                   {/* Expanded detail row */}
                   {isExpanded && (
                     <TableRow>
-                      <TableCell colSpan={7} sx={{ pb: 0, pt: 0 }}>
+                      <TableCell colSpan={8} sx={{ pb: 0, pt: 0 }}>
                         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                           <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
                             <Typography variant="subtitle2" fontWeight={600} gutterBottom>Description</Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}>{event.description}</Typography>
+                            {event.flyer_url && (
+                              <>
+                                <Typography variant="subtitle2" fontWeight={600} gutterBottom>Flyer</Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  <a href={event.flyer_url} target="_blank" rel="noopener noreferrer">
+                                    View Flyer
+                                  </a>
+                                </Typography>
+                              </>
+                            )}
                             {event.tag_names?.length > 0 && (
                               <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mb: 1 }}>
                                 {event.tag_names.map(t => (
@@ -510,7 +530,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
 
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
                   <Typography color="text.secondary">
                     No {isPartnerTab ? 'partner' : 'viewer'} events match the selected filters.
                   </Typography>
