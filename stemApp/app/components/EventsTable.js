@@ -177,10 +177,13 @@ export default function EventsTable({ events: initialEvents, organizations }) {
       if (!submitData.success) return { success: false, message: submitData.message };
 
       const eventId = submitData.event_id;
+      let flyer_url = null;
       if (flyerFile) {
         const form = new FormData();
         form.append('file', flyerFile);
-        await fetch(apiUrl(`/api/events/${eventId}/flyer`), { method: 'POST', body: form });
+        const flyerRes = await fetch(apiUrl(`/api/events/${eventId}/flyer`), { method: 'POST', body: form });
+        const flyerData = await flyerRes.json().catch(() => ({}));
+        flyer_url = flyerData.flyer_url || null;
       }
       const approveRes = await fetch(apiUrl(`/api/events/${eventId}/approve`), { method: 'POST' });
       const approveData = await approveRes.json();
@@ -195,6 +198,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
         admin_comment: null,
         created_at: new Date().toISOString(),
         tag_names: [],
+        flyer_url,
       }, ...prev]);
       setAddEventOpen(false);
       addToast(`"${formData.title}" created and published.`, 'success');
