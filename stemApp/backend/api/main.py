@@ -248,6 +248,7 @@ class SubmitEventRequest(BaseModel):
     cost: str = None
     hyperlink: str = None
     event_contact: str = None
+    event_type: str = None
 
 
 class EditEventRequest(BaseModel):
@@ -262,6 +263,7 @@ class EditEventRequest(BaseModel):
     cost: str = None
     hyperlink: str = None
     event_contact: str = None
+    event_type: str = None
 
 
 @app.post("/api/login")
@@ -602,7 +604,7 @@ def list_events(org_id: int = None, status: str = None, db: Session = Depends(ge
     result = db.execute(text(f"""
         SELECT event_id, org_id, submitter_name, submitter_email, title, description,
                start_datetime, end_datetime, address, city, county, audience, cost,
-               hyperlink, event_contact, status, admin_comment, created_at,
+               hyperlink, event_contact, event_type, flyer_url, status, admin_comment, created_at,
                {geocode_fields}
         FROM events {where} ORDER BY created_at DESC
     """), params)
@@ -627,11 +629,11 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
                 INSERT INTO events
                   (org_id, submitted_by_user_id, submitter_name, submitter_email, submitter_phone,
                    title, description, start_datetime, end_datetime, address, city, county,
-                   audience, cost, hyperlink, event_contact, status)
+                   audience, cost, hyperlink, event_contact, event_type, status)
                 VALUES
                   (:org_id, :submitted_by_user_id, :submitter_name, :submitter_email, :submitter_phone,
                    :title, :description, :start_datetime, :end_datetime, :address, :city, :county,
-                   :audience, :cost, :hyperlink, :event_contact, 'pending')
+                   :audience, :cost, :hyperlink, :event_contact, :event_type, 'pending')
                 RETURNING event_id
             """),
             payload.dict()
