@@ -202,6 +202,9 @@ export default function PublicEventsClient({ events }) {
                     {event.cost && (
                       <Chip label={event.cost} size="small" sx={{ mb: 1 }} />
                     )}
+                    {event.event_type && (
+                      <Chip label={event.event_type} size="small" variant="outlined" sx={{ mb: 1, ml: event.cost ? 1 : 0 }} />
+                    )}
                     <Typography variant="body2" sx={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -256,6 +259,17 @@ export default function PublicEventsClient({ events }) {
                 }
             </Typography>
           {selectedEvent?.audience && <Typography variant="body2"><strong>Audience:</strong> {selectedEvent.audience}</Typography>}
+          {selectedEvent?.event_type && (
+            <Typography variant="body2"><strong>Type:</strong> {selectedEvent.event_type}</Typography>
+          )}
+          {selectedEvent?.flyer_url && (
+            <Typography variant="body2">
+              <strong>Flyer:</strong>{' '}
+              <a href={selectedEvent.flyer_url} target="_blank" rel="noopener noreferrer">
+                View Flyer
+              </a>
+            </Typography>
+          )}
           {selectedEvent?.address && <Typography variant="body2"><strong>Address:</strong> {selectedEvent.address}, {selectedEvent?.city}, CT</Typography>}
           {selectedEvent?.contact_email && <Typography variant="body2"><strong>Contact:</strong> {selectedEvent.contact_email}</Typography>}
         </DialogContent>
