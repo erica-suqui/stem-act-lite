@@ -206,39 +206,34 @@ The developer who created the current WordPress website serves as a centralized 
 
 **Trusted Partner Dashboard**
 
-**US001 Organization (New Registration):** As a new trusted partner, I want to register an account and optionally submit one or more events during registration so that I can immediately begin the approval process without needing to navigate to a separate submission page.
+**US001 Organization (New Registration):** As a new trusted partner, I want to register an account using my Google Workspace email and optionally submit one or more events during registration so that I can immediately begin the approval process without needing to navigate to a separate submission page.
 
 **Acceptance Criteria:**
 
-* I can create an account with my organization's email
-* I can set a password based on security requirements
-* Upon submitting registration, I receive a verification email at the address I provided
-* I cannot access my dashboard or submit events until I verify my email
-* I can click the confirmation link in the email to verify my account
-* The verification link expires after 24 hours; I can request a new one if it expires
-* After verifying, I am prompted "Would you like to add an event now?" with Yes/No options
+* I can sign up by clicking "Continue with Google" and authenticating with my organization's Google Workspace account
+* My identity and email are verified automatically through Google OAuth — no separate email confirmation step is required
+* I cannot access my dashboard or submit events until my Google sign-in is complete
+* After authenticating, I am prompted "Would you like to add an event now?" with Yes/No options
 * If I select Yes, I can add event details and use "Add another event" to submit multiple events
 * If I select No, I complete registration without submitting an event
 * I am redirected to the dashboard once registration is complete
 
-**US002 Organization (Returning):** As a returning trusted partner, I want my login credentials to be saved so that I do not need to sign in every time I visit the STEM-ACT website.
+**US002 Organization (Returning):** As a returning trusted partner, I want to log in with my Google Workspace account so that I do not need to manage a separate password for this platform.
 
 **Acceptance Criteria:**
 
-* I can check a "Remember Me" option when logging in  
-* If checked, my session persists across browser sessions  
+* I can log in by clicking "Continue with Google" and selecting my Google Workspace account
+* My session persists across browser sessions unless I explicitly sign out
 * I am redirected to my dashboard upon successful login
+* If I sign out of Google or my session expires, I am prompted to re-authenticate via Google
 
-**US003** **Organizations**: As a returning trusted partner, I want to be able to reset my password on my own so I can quickly regain access without waiting for admin assistance.
+**US003 Organizations:** As a trusted partner who has been locked out or lost access to my account, I want to recover access without waiting for admin intervention.
 
 **Acceptance Criteria:**
 
-* I can click "Forgot Password" on the login page
-* I am prompted to enter my registered email address
-* I receive a time-limited password reset link at that email address
-* I can click the link and be taken to a page to set a new password
-* After successfully resetting, I am redirected to the login page
-* The reset link expires after 1 hour and cannot be reused
+* Since authentication is handled by Google OAuth, password reset is managed by Google — partners reset their password through their Google Workspace account
+* If my Google account is inaccessible, I can contact the STEM-ACT admin to unlink or reassign my account
+* The login page includes a visible link to Google's account recovery page for self-service help
 
 ### **Role-Based Access Control**
 
@@ -338,16 +333,18 @@ The developer who created the current WordPress website serves as a centralized 
 7. **Catalog Filtering:** Allows filtering by date, audience, location, and cost to help users find relevant events.  
 8. **Role-Based Access Control:** Ensures users can only access features relevant to their role (viewer, partner, admin, super admin).
 9. **Interactive Events Map:** Displays Connecticut counties; users can select a county to view events in that area.
-10. **Email Verification:** Sends a confirmation email upon partner registration; partners must verify their email address before accessing their dashboard or submitting events.
-11. **Password Reset:** Self-service password reset via a time-limited email link, allowing partners to securely reset their password without requiring admin intervention.
+10. **Google OAuth Authentication:** Partners log in using their Google Workspace account via Google OAuth 2.0. Identity and email verification are handled by Google — no separate email confirmation or password management is required on the platform.
+11. **Password Reset (via Google):** Password recovery is delegated to Google Workspace. The login page links to Google's account recovery flow. Admins can unlink accounts if a partner loses Google access entirely.
 
 ### **Technical Requirements**
 
-* WordPress plugin architecture  
-* Embedded views inside WordPress pages  
-* Separate admin interface  
-* MySQL database  
+* WordPress plugin architecture
+* Embedded views inside WordPress pages
+* Separate admin interface
+* MySQL database
 * Secure authentication for admins and partners
+* Google OAuth 2.0 for partner authentication (Google Workspace accounts)
+* Google Identity Services (GIS) JavaScript SDK for frontend sign-in flow
 
 ### **Non-Functional Requirements**
 
@@ -481,7 +478,7 @@ The developer who created the current WordPress website serves as a centralized 
 | Phase 1: Foundation | Setup & Authentication | WordPress plugin scaffold, database schema, user registration/login for users, partners, and admins |
 | Phase 2: Admin Dashboard | Approval Workflow | Admin interface to view pending submissions, approve/deny functionality, status tracking |
 | Phase 3: Submission System | Event Submission | Registration form with optional event submission, "Add another event" functionality, form validation |
-| Phase 4: Public Catalog & Auth Flows | Event Display, Email Verification, Password Reset | Embedded event catalog, filtering system, interactive map integration, email verification on registration, self-service password reset via email |
+| Phase 4: Public Catalog & Auth Flows | Event Display, Google OAuth | Embedded event catalog, filtering system, interactive map integration, Google OAuth 2.0 login for partners (Google Workspace), account linking/unlinking by admin |
 | Phase 5: Polish & Testing | QA & Deployment | Bug fixes, cross-browser testing, performance optimization, deployment to subdomain |
 
 ### **Team Structure**
