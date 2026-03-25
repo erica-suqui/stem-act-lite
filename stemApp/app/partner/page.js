@@ -69,7 +69,7 @@ export default function PartnerDashboard() {
     fetchEvents();
   }, [fetchEvents]);
 
-  const handleSubmitNew = async (formData) => {
+  const handleSubmitNew = async (formData, flyerFile) => {
     if (!orgId || !userId) {
       addToast('Session expired. Please log in again.', 'error');
       return { success: false, message: 'Not authenticated' };
@@ -89,6 +89,15 @@ export default function PartnerDashboard() {
         addToast(err.detail || 'Failed to submit event.', 'error');
         return { success: false, message: err.detail || 'Failed to submit event.' };
       }
+      const data = await res.json();
+      if (flyerFile && data.event_id) {
+        const form = new FormData();
+        form.append('file', flyerFile);
+        await fetch(apiUrl(`/api/events/${data.event_id}/flyer`), {
+          method: 'POST',
+          body: form,
+        });
+      }
       addToast('Event submitted successfully!', 'success');
       setSubmitOpen(false);
       fetchEvents();
@@ -99,7 +108,7 @@ export default function PartnerDashboard() {
     }
   };
 
-  const handleEditSubmit = async (formData) => {
+  const handleEditSubmit = async (formData, flyerFile) => {
     if (!editEvent) return;
     try {
       const res = await fetch(apiUrl(`/api/events/${editEvent.event_id}`), {
@@ -111,6 +120,14 @@ export default function PartnerDashboard() {
         const err = await res.json().catch(() => ({}));
         addToast(err.detail || 'Failed to update event.', 'error');
         return { success: false, message: err.detail || 'Failed to update event.' };
+      }
+      if (flyerFile) {
+        const form = new FormData();
+        form.append('file', flyerFile);
+        await fetch(apiUrl(`/api/events/${editEvent.event_id}/flyer`), {
+          method: 'POST',
+          body: form,
+        });
       }
       addToast('Event updated successfully!', 'success');
       setEditEvent(null);
