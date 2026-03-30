@@ -54,6 +54,19 @@ body {
 	to { transform: translateX(0); opacity: 1; }
 }
 
+.county-tooltip {
+	background: white;
+	border: 0.5px solid #ccc;
+	border-radius: 4px;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+	padding: 4px 8px;
+	font-size: 13px;
+  }
+
+  .leaflet-interactive:focus {
+	outline: none;
+  }
+
 .toast-success { background: #d4edda; color: #155724; border-left: 4px solid #5cb85c; }
 .toast-error   { background: #f8d7da; color: #721c24; border-left: 4px solid #d9534f; }
 
