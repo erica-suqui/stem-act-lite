@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import * as z from 'zod';
 import {
   TextField,
@@ -15,11 +15,27 @@ import {
   Box,
   Stack,
   Typography,
+  Chip,
+  IconButton,
 } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import CloseIcon from '@mui/icons-material/Close';
 
 const CT_COUNTIES = [
   'Fairfield','Hartford','Litchfield','Middlesex',
   'New Haven','New London','Tolland','Windham',
+];
+
+const EVENT_TYPES = [
+  'Workshop',
+  'Field Trip',
+  'Conference',
+  'Camp',
+  'Competition',
+  'Lecture',
+  'Community Event',
+  'Other',
 ];
 
 const eventSchema = z.object({
@@ -34,6 +50,7 @@ const eventSchema = z.object({
   cost: z.string().optional(),
   hyperlink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   event_contact: z.string().email('Must be a valid email').optional().or(z.literal('')),
+  event_type: z.string().optional(),
 });
 
 const EMPTY_FORM = {
@@ -48,7 +65,97 @@ const EMPTY_FORM = {
   cost: '',
   hyperlink: '',
   event_contact: '',
+  event_type: '',
 };
+
+function FlyerUpload({ flyerFile, setFlyerFile }) {
+  const inputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setFlyerFile(file);
+  };
+
+  const handleDragOver = (e) => { e.preventDefault(); setDragging(true); };
+  const handleDragLeave = () => setDragging(false);
+
+  const formatSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Flyer <Typography component="span" variant="caption" color="text.disabled">(PDF, JPG, or PNG — max 10MB)</Typography>
+      </Typography>
+
+      {flyerFile ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            p: 1.5,
+            border: '1px solid',
+            borderColor: 'primary.main',
+            borderRadius: 2,
+            bgcolor: 'primary.50',
+          }}
+        >
+          <InsertDriveFileIcon color="primary" fontSize="small" />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={500} noWrap>{flyerFile.name}</Typography>
+            <Typography variant="caption" color="text.secondary">{formatSize(flyerFile.size)}</Typography>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => setFlyerFile(null)}
+            aria-label="Remove flyer"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ) : (
+        <Box
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          sx={{
+            border: '2px dashed',
+            borderColor: dragging ? 'primary.main' : 'grey.300',
+            borderRadius: 2,
+            p: 3,
+            textAlign: 'center',
+            cursor: 'pointer',
+            bgcolor: dragging ? 'primary.50' : 'grey.50',
+            transition: 'all 0.15s ease',
+            '&:hover': { borderColor: 'primary.light', bgcolor: 'primary.50' },
+          }}
+        >
+          <CloudUploadIcon sx={{ fontSize: 32, color: dragging ? 'primary.main' : 'grey.400', mb: 0.5 }} />
+          <Typography variant="body2" color={dragging ? 'primary.main' : 'text.secondary'}>
+            {dragging ? 'Drop it here' : 'Drag & drop or click to browse'}
+          </Typography>
+          <Typography variant="caption" color="text.disabled">PDF, JPG, PNG up to 10 MB</Typography>
+        </Box>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        style={{ display: 'none' }}
+        onChange={(e) => setFlyerFile(e.target.files?.[0] || null)}
+      />
+    </Box>
+  );
+}
 
 export default function EventSubmissionForm({
   initialData = {},
@@ -60,6 +167,7 @@ export default function EventSubmissionForm({
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [flyerFile, setFlyerFile] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,7 +200,7 @@ export default function EventSubmissionForm({
 
     setIsSubmitting(true);
     try {
-      const response = await onSubmit(result.data);
+      const response = await onSubmit(result.data, flyerFile);
       if (response && !response.success) {
         setServerError(response.message || 'An error occurred. Please try again.');
       }
@@ -248,6 +356,38 @@ export default function EventSubmissionForm({
           error={Boolean(errors.event_contact)}
           helperText={errors.event_contact}
         />
+
+        {/* Event Type — chip grid */}
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Event Type
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {EVENT_TYPES.map((type) => {
+              const selected = formData.event_type === type;
+              return (
+                <Chip
+                  key={type}
+                  label={type}
+                  clickable
+                  onClick={() => setFormData((prev) => ({
+                    ...prev,
+                    event_type: selected ? '' : type,
+                  }))}
+                  variant={selected ? 'filled' : 'outlined'}
+                  color={selected ? 'primary' : 'default'}
+                  sx={{
+                    fontWeight: selected ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              );
+            })}
+          </Box>
+        </Box>
+
+        {/* Flyer Upload — drag-and-drop zone */}
+        <FlyerUpload flyerFile={flyerFile} setFlyerFile={setFlyerFile} />
 
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
           {onCancel && (
