@@ -3,4 +3,5 @@ node_modules/
 .env.local
 backend/.env
 backend/.venv/
+backend/api/.venv/
 **/__pycache__/
