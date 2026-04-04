@@ -1,4 +1,3 @@
-import PublicAppBar from '@/app/components/PublicAppBar';
 import { Box, Container, Typography, Paper, Button, Divider, Stack } from '@mui/material';
 import Link from 'next/link';
 
@@ -8,9 +7,7 @@ export const metadata = {
 
 export default function BecomeAPartnerPage() {
   return (
-    <>
-      <PublicAppBar />
-      <Box component="main" sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6, px: 2 }}>
+    <Box component="main" sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6, px: 2 }}>
         <Container maxWidth="sm">
           <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 } }}>
             <Typography variant="h4" component="h1" fontWeight={700} color="primary.dark" gutterBottom>
@@ -48,18 +45,13 @@ export default function BecomeAPartnerPage() {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
               Already have an access code?
             </Typography>
-            <Button
-              component={Link}
-              href="/register"
-              variant="contained"
-              size="large"
-              fullWidth
-            >
-              Complete your registration →
-            </Button>
+            <Link href="/register" style={{ textDecoration: 'none' }}>
+              <Button variant="contained" size="large" fullWidth>
+                Complete your registration →
+              </Button>
+            </Link>
           </Paper>
         </Container>
-      </Box>
-    </>
+    </Box>
   );
 }

@@ -38,12 +38,6 @@ export default async function HomePage() {
               Submit an Event
             </Button>
           </Link>
-          <Link href="/register" style={{ textDecoration: 'none' }}>
-            <Button variant="outlined" size="small"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white' } }}>
-              Become a Partner
-            </Button>
-          </Link>
         </Stack>
         <Stack direction="row" sx={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 16 }} spacing={1}>
           <Link href="/login" style={{ textDecoration: 'none' }}>
