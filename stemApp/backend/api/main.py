@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import importlib.util
 import os
 import secrets
 import string
@@ -16,9 +17,13 @@ from pydantic import BaseModel, Field
 
 from .database import SessionLocal
 from .email_service import send_email
-from google.cloud import storage as gcs_storage
+try:
+    from google.cloud import storage as gcs_storage
+except ImportError:
+    gcs_storage = None
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "")
+MULTIPART_INSTALLED = importlib.util.find_spec("multipart") is not None
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +118,59 @@ def _has_event_geocode_columns(db: Session) -> bool:
     ).mappings().first()
 
     return bool(result and result["has_lat"] and result["has_lng"] and result["has_geocoded_at"])
+
+
+def _get_event_column_flags(db: Session) -> dict:
+    row = db.execute(
+        text(
+            """
+            SELECT
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'event_type'
+                ) AS has_event_type,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'flyer_url'
+                ) AS has_flyer_url,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'lat'
+                ) AS has_lat,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'lng'
+                ) AS has_lng,
+                EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'events'
+                      AND column_name = 'geocoded_at'
+                ) AS has_geocoded_at
+            """
+        )
+    ).mappings().first()
+
+    return {
+        "event_type": bool(row and row["has_event_type"]),
+        "flyer_url": bool(row and row["has_flyer_url"]),
+        "lat": bool(row and row["has_lat"]),
+        "lng": bool(row and row["has_lng"]),
+        "geocoded_at": bool(row and row["has_geocoded_at"]),
+    }
 
 
 @app.get("/health")
@@ -589,7 +647,7 @@ def register_public(payload: PublicRegisterRequest, db: Session = Depends(get_db
 
 @app.get("/api/events")
 def list_events(org_id: int = None, status: str = None, db: Session = Depends(get_db)):
-    has_geocode_columns = _has_event_geocode_columns(db)
+    column_flags = _get_event_column_flags(db)
     conditions = []
     params = {}
     if org_id:
@@ -599,15 +657,17 @@ def list_events(org_id: int = None, status: str = None, db: Session = Depends(ge
         conditions.append("status = :status")
         params["status"] = status
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    event_type_field = "event_type" if column_flags["event_type"] else "NULL::TEXT AS event_type"
+    flyer_url_field = "flyer_url" if column_flags["flyer_url"] else "NULL::TEXT AS flyer_url"
     geocode_fields = (
         "lat, lng, geocoded_at"
-        if has_geocode_columns
+        if column_flags["lat"] and column_flags["lng"] and column_flags["geocoded_at"]
         else "NULL::DOUBLE PRECISION AS lat, NULL::DOUBLE PRECISION AS lng, NULL::TIMESTAMPTZ AS geocoded_at"
     )
     result = db.execute(text(f"""
         SELECT event_id, org_id, submitter_name, submitter_email, title, description,
                start_datetime, end_datetime, address, city, county, audience, cost,
-               hyperlink, event_contact, event_type, flyer_url, status, admin_comment, created_at,
+               hyperlink, event_contact, {event_type_field}, {flyer_url_field}, status, admin_comment, created_at,
                {geocode_fields}
         FROM events {where} ORDER BY created_at DESC
     """), params)
@@ -627,16 +687,29 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
             status_code=400,
         )
     try:
+        column_flags = _get_event_column_flags(db)
+        columns = [
+            "org_id", "submitted_by_user_id", "submitter_name", "submitter_email", "submitter_phone",
+            "title", "description", "start_datetime", "end_datetime", "address", "city", "county",
+            "audience", "cost", "hyperlink", "event_contact",
+        ]
+        values = [
+            ":org_id", ":submitted_by_user_id", ":submitter_name", ":submitter_email", ":submitter_phone",
+            ":title", ":description", ":start_datetime", ":end_datetime", ":address", ":city", ":county",
+            ":audience", ":cost", ":hyperlink", ":event_contact",
+        ]
+        if column_flags["event_type"]:
+            columns.append("event_type")
+            values.append(":event_type")
+        columns.append("status")
+        values.append("'pending'")
+
         result = db.execute(
-            text("""
+            text(f"""
                 INSERT INTO events
-                  (org_id, submitted_by_user_id, submitter_name, submitter_email, submitter_phone,
-                   title, description, start_datetime, end_datetime, address, city, county,
-                   audience, cost, hyperlink, event_contact, event_type, status)
+                  ({", ".join(columns)})
                 VALUES
-                  (:org_id, :submitted_by_user_id, :submitter_name, :submitter_email, :submitter_phone,
-                   :title, :description, :start_datetime, :end_datetime, :address, :city, :county,
-                   :audience, :cost, :hyperlink, :event_contact, :event_type, 'pending')
+                  ({", ".join(values)})
                 RETURNING event_id
             """),
             payload.dict()
@@ -661,7 +734,10 @@ def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(g
     if event["start_datetime"] and event["start_datetime"] < datetime.now(timezone.utc):
         return JSONResponse({"success": False, "message": "Cannot edit a past event"}, status_code=400)
 
+    column_flags = _get_event_column_flags(db)
     updates = {k: v for k, v in payload.dict().items() if v is not None}
+    if not column_flags["event_type"]:
+        updates.pop("event_type", None)
     if not updates:
         return JSONResponse({"success": False, "message": "No fields to update"}, status_code=400)
     updates["status"] = "pending"
@@ -678,46 +754,74 @@ def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(g
     return {"success": True}
 
 
-@app.post("/api/events/{event_id}/flyer")
-async def upload_flyer(event_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    # Verify event exists
-    event = db.execute(
-        text("SELECT event_id FROM events WHERE event_id = :event_id"),
-        {"event_id": event_id}
-    ).mappings().first()
-    if not event:
-        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+if MULTIPART_INSTALLED:
+    @app.post("/api/events/{event_id}/flyer")
+    async def upload_flyer(event_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+        if gcs_storage is None:
+            return JSONResponse(
+                {
+                    "success": False,
+                    "message": "Google Cloud Storage support is unavailable. Install google-cloud-storage to enable flyer uploads.",
+                },
+                status_code=503,
+            )
 
-    # Validate file type
-    allowed_types = {"application/pdf", "image/jpeg", "image/png"}
-    if file.content_type not in allowed_types:
-        return JSONResponse(
-            {"success": False, "message": "Only PDF, JPG, and PNG files are allowed"},
-            status_code=400
-        )
+        if not GCS_BUCKET_NAME:
+            return JSONResponse(
+                {
+                    "success": False,
+                    "message": "GCS_BUCKET_NAME is not configured.",
+                },
+                status_code=503,
+            )
 
-    # Validate file size (10MB)
-    contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        return JSONResponse({"success": False, "message": "File must be under 10MB"}, status_code=400)
+        # Verify event exists
+        event = db.execute(
+            text("SELECT event_id FROM events WHERE event_id = :event_id"),
+            {"event_id": event_id}
+        ).mappings().first()
+        if not event:
+            return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
 
-    try:
-        client = gcs_storage.Client()
-        bucket = client.bucket(GCS_BUCKET_NAME)
-        blob = bucket.blob(f"flyers/{event_id}/{file.filename}")
-        blob.upload_from_string(contents, content_type=file.content_type)
-        blob.make_public()
-        flyer_url = blob.public_url
+        # Validate file type
+        allowed_types = {"application/pdf", "image/jpeg", "image/png"}
+        if file.content_type not in allowed_types:
+            return JSONResponse(
+                {"success": False, "message": "Only PDF, JPG, and PNG files are allowed"},
+                status_code=400
+            )
 
-        db.execute(
-            text("UPDATE events SET flyer_url = :flyer_url WHERE event_id = :event_id"),
-            {"flyer_url": flyer_url, "event_id": event_id}
-        )
-        db.commit()
-        return JSONResponse({"success": True, "flyer_url": flyer_url})
-    except Exception as e:
-        db.rollback()
-        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+        # Validate file size (10MB)
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            return JSONResponse({"success": False, "message": "File must be under 10MB"}, status_code=400)
+
+        try:
+            client = gcs_storage.Client()
+            bucket = client.bucket(GCS_BUCKET_NAME)
+            blob = bucket.blob(f"flyers/{event_id}/{file.filename}")
+            blob.upload_from_string(contents, content_type=file.content_type)
+            blob.make_public()
+            flyer_url = blob.public_url
+
+            if not _get_event_column_flags(db)["flyer_url"]:
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "message": "Database schema does not support flyer uploads yet. Run the event_type/flyer migration first.",
+                    },
+                    status_code=503,
+                )
+
+            db.execute(
+                text("UPDATE events SET flyer_url = :flyer_url WHERE event_id = :event_id"),
+                {"flyer_url": flyer_url, "event_id": event_id}
+            )
+            db.commit()
+            return JSONResponse({"success": True, "flyer_url": flyer_url})
+        except Exception as e:
+            db.rollback()
+            return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
 @app.get("/api/invitations/validate")
