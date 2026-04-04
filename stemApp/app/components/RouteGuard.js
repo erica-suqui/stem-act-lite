@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { getStoredItem,clearStoredAuth } from '@/lib/storage';
 
-const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit','/verify-email']);
+const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/submit', '/verify-email', '/become-a-partner']);
 
 function isPartnerRoute(pathname, orgId) {
 	return pathname === `/partners/${orgId}` || pathname === '/partner';

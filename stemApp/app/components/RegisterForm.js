@@ -48,7 +48,8 @@ export default function RegisterForm(){
             message:"You must have at least a lowercase letter"}).refine((value)=>/[0-9]/.test(value),{
             message: "You must have at least 1 numerical number"
             }),
-        confirmPassword : z.string()
+        confirmPassword : z.string(),
+        partnerCode: z.string().min(1, "An access code is required to register"),
     }).refine(formData => formData.password == formData.confirmPassword, {
         message: "Passwords do not match",
         path: ['confirmPassword']
@@ -136,7 +137,7 @@ export default function RegisterForm(){
                     password: formData.password,
                     orgName: formData.orgName,
                     ...(inviteToken ? { inviteToken } : {}),
-                    ...(formData.partnerCode.trim() ? { partnerCode: formData.partnerCode.trim() } : {}),
+                    partnerCode: formData.partnerCode.trim(),
                 })
                 
             });
@@ -277,21 +278,22 @@ export default function RegisterForm(){
                                 helperText={errors.confirmPassword?._errors?.[0]}
                             />
                             <TextField
-                                label="Partner Access Code (optional)"
+                                label="Partner Access Code"
                                 name="partnerCode"
                                 value={formData.partnerCode}
                                 onChange={handleChange}
                                 onBlur={handleCodeBlur}
                                 fullWidth
+                                required
                                 helperText={
                                     codeStatus === 'valid'
                                         ? codeOrgName
                                             ? `✓ Valid code — you will join ${codeOrgName}`
                                             : '✓ Valid code — your account will be activated immediately'
                                         : codeStatus === 'invalid' ? codeMessage
-                                        : 'If you have an access code, enter it here for instant verification'
+                                        : errors.partnerCode?._errors?.[0] || 'Contact STEM-ACT to receive your access code'
                                 }
-                                error={codeStatus === 'invalid'}
+                                error={codeStatus === 'invalid' || Boolean(errors.partnerCode)}
                                 color={codeStatus === 'valid' ? 'success' : undefined}
                                 focused={codeStatus === 'valid' ? true : undefined}
                                 inputProps={{ style: { textTransform: 'uppercase' } }}

@@ -52,10 +52,10 @@ export default async function HomePage() {
               Sign In
             </Button>
           </Link>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
+          <Link href="/become-a-partner" style={{ textDecoration: 'none' }}>
             <Button variant="contained" size="small"
               sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' } }}>
-              Sign Up
+              Become a Partner
             </Button>
           </Link>
         </Stack>

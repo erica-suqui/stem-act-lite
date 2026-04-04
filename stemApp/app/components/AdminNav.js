@@ -10,7 +10,7 @@ import PartnerAppBar from './PartnerAppBar';
 const NO_NAV_ROUTES = new Set(['/submit', '/']);
 
 // Public layout (PublicAppBar, no auth)
-const PUBLIC_ROUTES = new Set(['/login', '/register', '/signup','/verify-email']);
+const PUBLIC_ROUTES = new Set(['/login', '/register', '/verify-email', '/become-a-partner']);
 
 // Partner layout (PartnerAppBar, RouteGuard)
 const PARTNER_ROUTES = new Set(['/partner']);

@@ -206,7 +206,6 @@ class UserRole(str, Enum):
     super_admin = "super_admin"
     admin = "admin"
     partner = "partner"
-    viewer = "viewer"
 
 
 class InviteRole(str, Enum):
@@ -260,12 +259,6 @@ class RegisterRequest(BaseModel):
     inviteToken: str = None
     partnerCode: str = None
 
-
-class PublicRegisterRequest(BaseModel):
-    firstName: str = Field(min_length=1)
-    lastName: str = Field(min_length=1)
-    email: str = Field(min_length=1)
-    password: str = Field(min_length=8)
 
 class RequestMessage(BaseModel):
     org_id: None
@@ -604,45 +597,6 @@ def sendMessage(payload:RequestMessage, background_tasks: BackgroundTasks,db: Se
         return JSONResponse({"success": True})
     except Exception as exc:
          return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
-
-
-@app.post("/api/register/public")
-def register_public(payload: PublicRegisterRequest, db: Session = Depends(get_db)):
-    email = payload.email.strip().lower()
-    existing = db.execute(
-        text("SELECT user_id FROM users WHERE lower(email) = lower(:email) LIMIT 1"),
-        {"email": email},
-    ).first()
-    if existing is not None:
-        return JSONResponse(
-            {"success": False, "error": "An account with this email already exists"},
-            status_code=409,
-        )
-    try:
-        password_hash = bcrypt.hashpw(
-            payload.password.encode("utf-8"),
-            bcrypt.gensalt(),
-        ).decode("utf-8")
-        user_name = email.split("@")[0] if "@" in email else email
-        user_result = db.execute(
-            text("""
-                INSERT INTO users (email, password_hash, role, user_name)
-                VALUES (:email, :password_hash, :role, :user_name)
-                RETURNING user_id
-            """),
-            {
-                "email": email,
-                "password_hash": password_hash,
-                "role": UserRole.viewer.value,
-                "user_name": user_name,
-            },
-        )
-        user_id = user_result.scalar()
-        db.commit()
-        return {"success": True, "user_id": user_id}
-    except Exception as exc:
-        db.rollback()
-        return JSONResponse({"success": False, "error": str(exc)}, status_code=500)
 
 
 @app.get("/api/events")
