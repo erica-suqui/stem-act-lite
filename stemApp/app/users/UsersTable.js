@@ -7,8 +7,8 @@ import EditRoleModal from '../components/EditRoleModal';
 import DeleteUserModal from '../components/DeleteUserModal';
 import { apiUrl } from '@/lib/api';
 import {
-  Box, Grid, Card, CardActionArea, CardContent, Stack, TextField,
-  FormControl, InputLabel, Select, MenuItem, Typography, Chip, Button,
+  Stack, TextField,
+  Typography, Chip, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 
@@ -18,11 +18,11 @@ const ROLE_CHIP = {
   partner:     { label: 'Partner',     color: 'default' },
 };
 
-const ROLE_CARDS = [
-  { filterValue: 'all',         label: 'Total Users',  key: 'total',       color: 'primary.dark' },
-  { filterValue: 'partner',     label: 'Partners',     key: 'partners',    color: 'warning.dark' },
-  { filterValue: 'admin',       label: 'Admins',       key: 'admins',      color: 'success.dark' },
-  { filterValue: 'super_admin', label: 'Super Admins', key: 'superAdmins', color: 'error.dark'   },
+const ROLE_PILLS = [
+  { key: 'all',         label: 'All',         color: 'default' },
+  { key: 'partner',     label: 'Partners',     color: 'warning' },
+  { key: 'admin',       label: 'Admins',       color: 'success' },
+  { key: 'super_admin', label: 'Super Admins', color: 'error'   },
 ];
 
 export default function UsersTable({ users: initialUsers }) {
@@ -101,25 +101,27 @@ const { toasts, addToast, dismissToast } = useToast();
 
   return (
     <>
-      {/* Stat Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {ROLE_CARDS.map(({ filterValue, label, key, color }) => {
-          const isActive = roleFilter === filterValue;
+      {/* Role pill filters */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+        {ROLE_PILLS.map(({ key, label, color }) => {
+          const active = roleFilter === key;
+          const count = key === 'all' ? stats.total : stats[key === 'partner' ? 'partners' : key === 'admin' ? 'admins' : 'superAdmins'];
           return (
-            <Grid item xs={6} sm={3} key={key}>
-              <Card elevation={isActive ? 4 : 1} sx={{ border: isActive ? 2 : 1, borderColor: isActive ? color : 'divider' }}>
-                <CardActionArea onClick={() => setRoleFilter(filterValue)}      aria-label={`Filter by ${label} — ${stats[key]} ${label.toLowerCase()}`}
-                  aria-pressed={isActive} sx={{ p: 2, textAlign: 'center' }}>
-                  <CardContent sx={{ p: 0 }}>
-                    <Typography variant="h4" fontWeight={700} color={color}>{stats[key]}</Typography>
-                    <Typography variant="body2" color="text.secondary">{label}</Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
+            <Chip
+              key={key}
+              label={`${label} ${count}`}
+              color={active ? color : 'default'}
+              variant={active ? 'filled' : 'outlined'}
+              onClick={() => setRoleFilter(key)}
+              clickable
+              size="small"
+              aria-pressed={active}
+              aria-label={`Filter by ${label} — ${count} ${label.toLowerCase()}`}
+              sx={{ borderRadius: 4, fontWeight: active ? 600 : 400, px: 0.5 }}
+            />
           );
         })}
-      </Grid>
+      </Stack>
 
       {/* Filters */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
@@ -132,20 +134,6 @@ const { toasts, addToast, dismissToast } = useToast();
           sx={{ minWidth: 240 }}
           inputProps={{ 'aria-label': 'Search by email or organization' }}
         />
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel id="role-filter-label">Role</InputLabel>
-          <Select
-            labelId="role-filter-label"
-            value={roleFilter}
-            label="Role"
-            onChange={e => setRoleFilter(e.target.value)}
-          >
-            <MenuItem value="all">All roles</MenuItem>
-            <MenuItem value="super_admin">Super Admin</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-            <MenuItem value="partner">Partner</MenuItem>
-          </Select>
-        </FormControl>
         <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
           {filtered.length} {filtered.length === 1 ? 'user' : 'users'}
         </Typography>

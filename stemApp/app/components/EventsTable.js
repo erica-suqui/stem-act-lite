@@ -322,11 +322,11 @@ export default function EventsTable({ events: initialEvents, organizations }) {
       <TableContainer component={Paper} elevation={0} variant="outlined">
         <Table size="small" aria-label={`${isPartnerTab ? 'Partner' : 'Viewer'} event submissions`}>
           <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.50' }}>
+            <TableRow sx={{ bgcolor: 'primary.dark' }}>
               {['EVENT', 'TYPE', 'DATE & TIME', 'LOCATION', 'AUDIENCE', 'COST', 'SUBMITTED', 'ACTIONS'].map(h => (
                 <TableCell
                   key={h}
-                  sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.secondary', letterSpacing: 0.5, whiteSpace: 'nowrap', py: 1.25 }}
+                  sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'white', letterSpacing: 0.5, whiteSpace: 'nowrap', py: 1.25 }}
                 >
                   {h}
                 </TableCell>

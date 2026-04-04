@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/useToast';
 import { apiUrl } from '@/lib/api';
 import { formatFullName } from '@/lib/utils';
 import {
-  Box, Stack, Grid, Card, CardActionArea, CardContent, TextField,
+  Box, Stack, TextField,
   Typography, Chip, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -19,11 +19,11 @@ const STATUS_CHIP = {
   disabled: { label: 'Disabled', color: 'error'   },
 };
 
-const STAT_CARDS = [
-  { filterValue: 'all',      label: 'Total',    key: 'total',    color: 'primary.dark' },
-  { filterValue: 'pending',  label: 'Pending',  key: 'pending',  color: 'warning.dark' },
-  { filterValue: 'active',   label: 'Active',   key: 'active',   color: 'success.dark' },
-  { filterValue: 'disabled', label: 'Disabled', key: 'disabled', color: 'error.dark'   },
+const STATUS_PILLS = [
+  { key: 'all',      label: 'All',      color: 'default' },
+  { key: 'pending',  label: 'Pending',  color: 'warning' },
+  { key: 'active',   label: 'Active',   color: 'success' },
+  { key: 'disabled', label: 'Disabled', color: 'error'   },
 ];
 
 export default function PartnersTable({ organizations: initialOrganizations }) {
@@ -101,28 +101,27 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
 
   return (
     <>
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {STAT_CARDS.map(({ filterValue, label, key, color }) => {
-          const isActive = statusFilter === filterValue;
+      {/* Status pill filters */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+        {STATUS_PILLS.map(({ key, label, color }) => {
+          const active = statusFilter === key;
+          const count = key === 'all' ? stats.total : stats[key];
           return (
-            <Grid item xs={6} sm={3} key={key}>
-              <Card elevation={isActive ? 4 : 1} sx={{ border: isActive ? 2 : 1, borderColor: isActive ? color : 'divider' }}>
-                <CardActionArea
-                  onClick={() => setStatusFilter(filterValue)}
-                  aria-pressed={isActive}
-                  aria-label = {`Filter by ${label} - ${stats[key]} ${label.toLowerCase()} organization${stats[key] !== 1 ? 's' : ''}`}
-                  sx={{ p: 2, textAlign: 'center' }}
-                >
-                  <CardContent sx={{ p: 0 }}>
-                    <Typography variant="h4" fontWeight={700} color={color}>{stats[key]}</Typography>
-                    <Typography variant="body2" color="text.secondary">{label}</Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
+            <Chip
+              key={key}
+              label={`${label} ${count}`}
+              color={active ? color : 'default'}
+              variant={active ? 'filled' : 'outlined'}
+              onClick={() => setStatusFilter(key)}
+              clickable
+              size="small"
+              aria-pressed={active}
+              aria-label={`Filter by ${label} — ${count} organization${count !== 1 ? 's' : ''}`}
+              sx={{ borderRadius: 4, fontWeight: active ? 600 : 400, px: 0.5 }}
+            />
           );
         })}
-      </Grid>
+      </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
         <TextField
@@ -131,7 +130,7 @@ export default function PartnersTable({ organizations: initialOrganizations }) {
           onChange={e => setSearch(e.target.value)}
           placeholder="Organization, contact name, or email…"
           label="Search"
-          sx={{ minWidth: 280 }}
+          sx={{ minWidth: 280, maxWidth: 280 }}
           inputProps={{ 'aria-label': 'Search by organization name, contact name, or email' }}
         />
         <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }} aria-live="polite" aria-atomic="true">
