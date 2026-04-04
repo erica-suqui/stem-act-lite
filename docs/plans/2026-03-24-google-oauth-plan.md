@@ -13,11 +13,11 @@
 ## Task 1: DB Migration — Add OAuth Columns
 
 **Files:**
-- Create: `stemApp/backend/migrations/004_google_oauth.sql`
+- Create: `stemApp/db/migrations/2026-03-24-google-oauth.sql`
 
 **Step 1: Write the migration SQL**
 
-Create `stemApp/backend/migrations/004_google_oauth.sql`:
+Create `stemApp/db/migrations/2026-03-24-google-oauth.sql`:
 
 ```sql
 -- Make password_hash nullable (Google OAuth users have no password)
@@ -34,7 +34,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAU
 **Step 2: Run the migration**
 
 ```bash
-PGPASSWORD=stemact_pass psql -h 127.0.0.1 -p 5433 -U stemact_user -d stemact -f stemApp/backend/migrations/004_google_oauth.sql
+PGPASSWORD=stemact_pass psql -h 127.0.0.1 -p 5433 -U stemact_user -d stemact -f stemApp/db/migrations/2026-03-24-google-oauth.sql
 ```
 
 Expected output:
@@ -56,7 +56,7 @@ Confirm: `password_hash` shows no `not null`, `google_sub` and `email_verified` 
 **Step 4: Commit**
 
 ```bash
-git add stemApp/backend/migrations/004_google_oauth.sql
+git add stemApp/db/migrations/2026-03-24-google-oauth.sql
 git commit -m "feat: add google_sub and email_verified columns, make password_hash nullable"
 ```
 

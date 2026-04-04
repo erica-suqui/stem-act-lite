@@ -1,73 +1,18 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { formatDate, formatFullName, formatTimeRange } from '@/lib/utils';
-import pool from '@/lib/db';
-import { hasEventTagTables, hasSplitContactNameColumns } from '@/lib/dbFeatures';
-import  SendMessageButton  from '@/app/components/SendMessage'
+import { apiUrl } from '@/lib/api';
+import SendMessageButton from '@/app/components/SendMessage';
 
 const STATUS_META = {
 	pending:  { Icon: Clock,        label: 'Pending',  className: 'status-pending' },
-	approved: { Icon: CheckCircle,  label: 'Approved', className: 'status-approved' },
+	active:   { Icon: CheckCircle,  label: 'Active',   className: 'status-approved' },
+	disabled: { Icon: XCircle,      label: 'Disabled', className: 'status-denied' },
 	denied:   { Icon: XCircle,      label: 'Denied',   className: 'status-denied' },
-	rejected: { Icon: XCircle,      label: 'Rejected', className: 'status-denied' },
 };
-
-export const dynamic = 'force-dynamic';
-
-async function getOrganization(orgId) {
-	const splitNamesEnabled = await hasSplitContactNameColumns();
-	const result = await pool.query(
-		splitNamesEnabled
-			? `
-				SELECT
-					org_id,
-					org_name,
-					contact_first_name,
-					contact_last_name,
-					contact_email,
-					contact_phone,
-					CASE
-						WHEN status = 'approved' THEN 'active'
-						WHEN status IN ('rejected', 'inactive') THEN 'disabled'
-						ELSE status
-					END AS status
-				FROM organizations
-				WHERE org_id = $1
-				LIMIT 1
-			`
-			: `
-				SELECT
-					org_id,
-					org_name,
-					split_part(COALESCE(contact_name, ''), ' ', 1) AS contact_first_name,
-					CASE
-						WHEN position(' ' IN COALESCE(contact_name, '')) > 0
-							THEN NULLIF(substring(COALESCE(contact_name, '') FROM position(' ' IN COALESCE(contact_name, '')) + 1), '')
-						ELSE NULL
-					END AS contact_last_name,
-					contact_email,
-					contact_phone,
-					CASE
-						WHEN status = 'approved' THEN 'active'
-						WHEN status IN ('rejected', 'inactive') THEN 'disabled'
-						ELSE status
-					END AS status
-				FROM organizations
-				WHERE org_id = $1
-				LIMIT 1
-			`,
-		[orgId],
-	);
-	if (!result.rows[0]) return null;
-
-	return {
-		...result.rows[0],
-		contact_name: formatFullName(
-			result.rows[0].contact_first_name,
-			result.rows[0].contact_last_name,
-		),
-	};
-}
 
 const formatPhone = (phone) => {
     if (!phone) return '—';
@@ -75,70 +20,31 @@ const formatPhone = (phone) => {
     return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`;
 };
 
-async function getOrganizationEvents(orgId) {
-	const tagsEnabled = await hasEventTagTables();
-	const result = await pool.query(
-		tagsEnabled
-			? `
-				SELECT
-					e.event_id,
-					e.org_id,
-					e.title,
-					e.start_datetime,
-					e.end_datetime,
-					e.address,
-					e.city,
-					e.county,
-					e.status,
-					e.hyperlink AS event_link,
-					e.event_contact AS contact_email,
-					COALESCE(array_remove(array_agg(DISTINCT t.name), NULL), '{}') AS tag_names,
-					e.created_at AS submitted_at
-				FROM events e
-				LEFT JOIN event_tags et ON et.event_id = e.event_id
-				LEFT JOIN tags t ON t.tag_id = et.tag_id
-				WHERE e.org_id = $1
-				GROUP BY e.event_id
-				ORDER BY e.created_at DESC
-			`
-			: `
-				SELECT
-					e.event_id,
-					e.org_id,
-					e.title,
-					e.start_datetime,
-					e.end_datetime,
-					e.address,
-					e.city,
-					e.county,
-					e.status,
-					e.hyperlink AS event_link,
-					e.event_contact AS contact_email,
-					ARRAY[]::TEXT[] AS tag_names,
-					e.created_at AS submitted_at
-				FROM events e
-				WHERE e.org_id = $1
-				ORDER BY e.created_at DESC
-			`,
-		[orgId],
-	);
-	return result.rows;
-}
+export default function PartnerDetailPage() {
+	const { id } = useParams();
+	const [org, setOrg] = useState(null);
+	const [events, setEvents] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [notFound, setNotFound] = useState(false);
 
-export async function generateMetadata({ params }) {
-	const { id } = await params;
-	const org = await getOrganization(Number(id));
-	return {
-		title: org ? `${org.org_name} — STEM-ACT Admin` : 'Partner Not Found',
-	};
-}
+	useEffect(() => {
+		if (!id) return;
+		Promise.all([
+			fetch(apiUrl(`/api/organizations/${id}`)).then(r => r.json()),
+			fetch(apiUrl(`/api/events?org_id=${id}`)).then(r => r.json()),
+		]).then(([orgData, eventsData]) => {
+			if (!orgData.success) { setNotFound(true); return; }
+			const o = orgData.organization;
+			setOrg({
+				...o,
+				contact_name: formatFullName(o.contact_first_name, o.contact_last_name),
+			});
+			setEvents(eventsData.events ?? []);
+		}).finally(() => setLoading(false));
+	}, [id]);
 
-export default async function PartnerDetailPage({ params }) {
-	const { id } = await params;
-	const org = await getOrganization(Number(id));
-	if (!org) notFound();
-
-	const events = await getOrganizationEvents(org.org_id);
+	if (loading) return <main className="dashboard"><p>Loading…</p></main>;
+	if (notFound) return <main className="dashboard"><p>Partner not found.</p></main>;
 
 	const pending  = events.filter(e => e.status === 'pending').length;
 	const approved = events.filter(e => e.status === 'approved').length;
@@ -163,7 +69,7 @@ export default async function PartnerDetailPage({ params }) {
 					<dt><strong>Phone:</strong></dt>
 					<dd>{formatPhone(org.contact_phone)}</dd>
 					</div>
-					
+
 					<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
 					<dt><strong>Status: </strong></dt>
 					<dd>
@@ -245,7 +151,7 @@ export default async function PartnerDetailPage({ params }) {
 										</td>
 										<td>
 											<small>{event.contact_email}</small>
-											{event.tag_names.length > 0 && (
+											{event.tag_names?.length > 0 && (
 												<>
 													<br />
 													<small>{event.tag_names.join(', ')}</small>

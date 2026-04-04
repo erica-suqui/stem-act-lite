@@ -374,7 +374,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     if (
         user["role"] == UserRole.partner.value
-        and user["organization_status"] in {"pending", "disabled", "inactive", "rejected"}
+        and user["organization_status"] in {"pending", "disabled"}
     ):
         return JSONResponse(
             {"success": False, "error": "This partner account is not active yet"},
@@ -1229,7 +1229,12 @@ def redeem_partner_code(payload: RedeemPartnerCodeRequest, db: Session = Depends
 @app.get("/api/organizations/{org_id}")
 def get_organization(org_id: int, db: Session = Depends(get_db)):
     row = db.execute(
-        text("SELECT org_id, org_name, status FROM organizations WHERE org_id = :id"),
+        text("""
+            SELECT org_id, org_name, contact_first_name, contact_last_name,
+                   contact_email, contact_phone, status
+            FROM organizations
+            WHERE org_id = :id
+        """),
         {"id": org_id},
     ).mappings().first()
     if row is None:
