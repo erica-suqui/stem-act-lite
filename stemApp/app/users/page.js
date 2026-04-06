@@ -15,7 +15,8 @@ async function getUsers() {
 			u.user_id,
 			u.email,
 			u.role,
-			o.org_name
+			o.org_name,
+			u.google_sub IS NOT NULL AS google_linked
 		FROM users u
 		LEFT JOIN organizations o ON o.org_id = u.org_id
 		ORDER BY u.user_id DESC
