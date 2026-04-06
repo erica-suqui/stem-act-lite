@@ -22,7 +22,11 @@ const CT_COUNTIES = [
 ];
 
 function isImageUrl(url) {
-  return /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url);
+  return /\.(jpg|jpeg|png|gif|webp)(\?|#|\/|$)/i.test(url);
+}
+
+function isPdfUrl(url) {
+  return /\.pdf(\?|#|\/|$)/i.test(url);
 }
 
 export default function PublicEventsClient({ events }) {
@@ -186,16 +190,19 @@ export default function PublicEventsClient({ events }) {
                     isImageUrl(event.flyer_url) ? (
                       <CardMedia
                         component="img"
-                        height="160"
+                        height={160}
                         image={event.flyer_url}
                         alt={`Flyer for ${event.title}`}
                         sx={{ objectFit: 'cover' }}
+                        loading="lazy"
                       />
-                    ) : (
+                    ) : isPdfUrl(event.flyer_url) ? (
                       // TODO: When backend thumbnail generation is available, replace this placeholder
                       // with an <img> from a server-side endpoint e.g. GET /api/events/:id/flyer-thumbnail
                       // that renders the first page of the PDF as an image (e.g. using pdf2pic or Puppeteer).
                       <Box
+                        role="img"
+                        aria-label={`PDF flyer for ${event.title}`}
                         sx={{
                           height: 160,
                           bgcolor: 'grey.100',
@@ -211,7 +218,7 @@ export default function PublicEventsClient({ events }) {
                         <PictureAsPdfIcon sx={{ fontSize: 40, color: 'grey.400' }} />
                         <Typography variant="caption" color="text.secondary">PDF Flyer</Typography>
                       </Box>
-                    )
+                    ) : null
                   )}
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="h6" component="h2" gutterBottom sx={{ lineHeight: 1.3 }}>
