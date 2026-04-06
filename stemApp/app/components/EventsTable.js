@@ -13,9 +13,10 @@ import {
   Box, Stack, Tabs, Tab, TextField, Select, MenuItem, FormControl,
   InputLabel, Typography, Chip, Button, Collapse, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Dialog, DialogTitle, DialogContent,
+  Dialog, DialogTitle, DialogContent, IconButton,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 import InputAdornment from '@mui/material/InputAdornment';
 
 export default function EventsTable({ events: initialEvents, organizations }) {
@@ -35,6 +36,7 @@ export default function EventsTable({ events: initialEvents, organizations }) {
   const [commentThreads, setCommentThreads] = useState({});
   const [commentInputs, setCommentInputs]   = useState({});
   const [sendingComment, setSendingComment] = useState(null);
+  const [flyerUrl, setFlyerUrl]             = useState(null);
 
   const fetchComments = useCallback(async (eventId) => {
     const res = await fetch(apiUrl(`/api/events/${eventId}/comments`));
@@ -469,11 +471,15 @@ export default function EventsTable({ events: initialEvents, organizations }) {
                             {event.flyer_url && (
                               <>
                                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>Flyer</Typography>
-                                <Typography variant="body2" sx={{ mb: 1 }}>
-                                  <a href={event.flyer_url} target="_blank" rel="noopener noreferrer">
+                                <Box sx={{ mb: 1 }}>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() => setFlyerUrl(event.flyer_url)}
+                                  >
                                     View Flyer
-                                  </a>
-                                </Typography>
+                                  </Button>
+                                </Box>
                               </>
                             )}
                             {event.tag_names?.length > 0 && (
@@ -575,6 +581,61 @@ export default function EventsTable({ events: initialEvents, organizations }) {
             submitLabel="Create &amp; Publish"
             onCancel={() => setAddEventOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Flyer popup */}
+      <Dialog
+        open={Boolean(flyerUrl)}
+        onClose={() => setFlyerUrl(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Typography variant="h6" fontWeight={600}>Flyer</Typography>
+          <IconButton
+            size="small"
+            onClick={() => setFlyerUrl(null)}
+            aria-label="Close flyer preview"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2, textAlign: 'center' }}>
+          {flyerUrl && (() => {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(flyerUrl);
+            const isPdf   = /\.pdf(\?|$)/i.test(flyerUrl);
+            if (isImage) {
+              return (
+                <Box
+                  component="img"
+                  src={flyerUrl}
+                  alt="Event flyer"
+                  sx={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 1 }}
+                />
+              );
+            }
+            if (isPdf) {
+              return (
+                <Box sx={{ width: '100%', height: '70vh' }}>
+                  <iframe
+                    src={flyerUrl}
+                    title="Event flyer PDF"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 'none', borderRadius: 4 }}
+                  />
+                </Box>
+              );
+            }
+            return (
+              <Typography variant="body2">
+                <a href={flyerUrl} target="_blank" rel="noopener noreferrer">
+                  Open flyer in new tab
+                </a>
+              </Typography>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
