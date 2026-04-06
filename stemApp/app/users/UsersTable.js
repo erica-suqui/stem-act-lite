@@ -96,6 +96,26 @@ const { toasts, addToast, dismissToast } = useToast();
     }
   }, [editTarget, editRole]);
 
+  const handleUnlinkGoogle = useCallback(async (user) => {
+    setLoadingId(user.user_id);
+    try {
+      const res = await fetch(apiUrl(`/api/users/${user.user_id}/unlink-google`), { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u =>
+          u.user_id === user.user_id ? { ...u, google_linked: false } : u
+        ));
+        addToast(`Google account unlinked from ${user.email}.`, 'success');
+      } else {
+        addToast('Error: ' + data.message, 'error');
+      }
+    } catch {
+      addToast('Network error. Please try again.', 'error');
+    } finally {
+      setLoadingId(null);
+    }
+  }, []);
+
   const superAdminTakenBy = editTarget && superAdminUser && superAdminUser.user_id !== editTarget.user_id
     ? superAdminUser : null;
 
@@ -144,7 +164,7 @@ const { toasts, addToast, dismissToast } = useToast();
         <Table size="small" aria-label="User accounts">
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.dark' }}>
-              {['Email', 'Role', 'Organization', 'Actions'].map(h => (
+              {['Email', 'Role', 'Organization', 'Google', 'Actions'].map(h => (
                 <TableCell key={h} scope="col" sx={{ color: 'white', fontWeight: 600 }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -160,6 +180,12 @@ const { toasts, addToast, dismissToast } = useToast();
                     <Chip label={chipProps.label} color={chipProps.color} size="small" />
                   </TableCell>
                   <TableCell><Typography variant="body2">{user.org_name || '—'}</Typography></TableCell>
+                  <TableCell>
+                    {user.google_linked
+                      ? <Chip label="Connected" color="success" size="small" />
+                      : <Typography variant="body2" color="text.secondary">—</Typography>
+                    }
+                  </TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     <Stack direction="row" spacing={0.5}>
                       <Button size="small" variant="outlined" disabled={isLoading}
@@ -172,6 +198,18 @@ const { toasts, addToast, dismissToast } = useToast();
                         aria-label={`Delete user ${user.email}`}>
                         Delete
                       </Button>
+                      {user.google_linked && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="warning"
+                          disabled={isLoading}
+                          onClick={() => handleUnlinkGoogle(user)}
+                          aria-label={`Unlink Google account for ${user.email}`}
+                        >
+                          Unlink Google
+                        </Button>
+                      )}
                     </Stack>
                   </TableCell>
                 </TableRow>
@@ -179,7 +217,7 @@ const { toasts, addToast, dismissToast } = useToast();
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">No users match your search.</Typography>
                 </TableCell>
               </TableRow>

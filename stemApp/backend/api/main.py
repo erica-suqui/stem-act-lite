@@ -1078,6 +1078,27 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"success": True}
 
 
+@app.post("/api/users/{user_id}/unlink-google")
+def unlink_google(user_id: int, db: Session = Depends(get_db)):
+    target = db.execute(
+        text("SELECT user_id, google_sub FROM users WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    ).mappings().first()
+
+    if target is None:
+        return JSONResponse({"success": False, "message": "User not found"}, status_code=404)
+
+    if target["google_sub"] is None:
+        return JSONResponse({"success": False, "message": "No Google account linked"}, status_code=400)
+
+    db.execute(
+        text("UPDATE users SET google_sub = NULL WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    db.commit()
+    return {"success": True}
+
+
 @app.post("/api/users/invite")
 def invite_user(payload: InviteUserRequest, db: Session = Depends(get_db)):
     token = secrets.token_hex(24)
