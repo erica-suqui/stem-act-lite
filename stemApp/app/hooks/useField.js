@@ -3,30 +3,42 @@
 import { useState, useCallback } from 'react';
 
 /**
+ * Extracts a flat error map from a Zod safeParse result.
+ * Defined outside the hook so it is stable and doesn't escape dep tracking.
+ * @param {import('zod').SafeParseReturnType} zodResult
+ * @returns {{ [fieldName: string]: string }}
+ */
+function extractErrors(zodResult) {
+  if (zodResult.success) return {};
+  const flat = {};
+  for (const issue of zodResult.error.issues) {
+    const field = issue.path[0];
+    if (field && !flat[field]) flat[field] = issue.message;
+  }
+  return flat;
+}
+
+/**
  * useField — form state + validation lifecycle hook
  *
  * @param {object} schema      - Zod schema for the whole form
  * @param {object} initial     - initial field values { fieldName: '' }
  * @param {function} onSubmit  - async (validData) => void, called only when schema passes
- * @returns {{ values, errors, handleChange, handleBlur, handleSubmit, setValues }}
+ * @returns {{ values, errors, touched, handleChange, handleBlur, handleSubmit, setValues }}
  *
  * Error format: flat object { fieldName: 'error message' }
  * (NOT Zod's .format() nested structure)
+ *
+ * Validation lifecycle:
+ * - Before touch: no error shown (field is pristine)
+ * - On blur: mark touched, validate, show error if invalid
+ * - On change after touch: re-validate immediately (live feedback)
+ * - On submit: mark all fields touched + validate all at once
  */
 export function useField(schema, initial, onSubmit) {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-
-  const extractErrors = (zodResult) => {
-    if (zodResult.success) return {};
-    const flat = {};
-    for (const issue of zodResult.error.issues) {
-      const field = issue.path[0];
-      if (field && !flat[field]) flat[field] = issue.message;
-    }
-    return flat;
-  };
 
   const validateOne = useCallback((name, currentValues) => {
     const result = schema.safeParse(currentValues);
@@ -76,5 +88,5 @@ export function useField(schema, initial, onSubmit) {
     onSubmit(result.data);
   }, [values, schema, initial, onSubmit]);
 
-  return { values, errors, handleChange, handleBlur, handleSubmit, setValues };
+  return { values, errors, touched, handleChange, handleBlur, handleSubmit, setValues };
 }
