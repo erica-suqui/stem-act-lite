@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as z from 'zod';
 import {
   TextField,
@@ -21,6 +21,7 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CloseIcon from '@mui/icons-material/Close';
+import { apiUrl } from '@/lib/api';
 
 const CT_COUNTIES = [
   'Fairfield','Hartford','Litchfield','Middlesex',
@@ -51,6 +52,9 @@ const eventSchema = z.object({
   hyperlink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   event_contact: z.string().email('Must be a valid email').optional().or(z.literal('')),
   event_type: z.string().optional(),
+  tag_ids: z.array(z.number())
+    .min(1, 'At least one tag is required')
+    .max(3, 'Maximum 3 tags allowed'),
 });
 
 const EMPTY_FORM = {
@@ -68,7 +72,7 @@ const EMPTY_FORM = {
   event_type: '',
 };
 
-function FlyerUpload({ flyerFile, setFlyerFile }) {
+export function FlyerUpload({ flyerFile, setFlyerFile }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
@@ -168,6 +172,21 @@ export default function EventSubmissionForm({
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flyerFile, setFlyerFile] = useState(null);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [selectedTagIds, setSelectedTagIds] = useState(
+    Array.isArray(initialData.tag_ids) ? initialData.tag_ids : []
+  );
+
+  useEffect(() => {
+    fetch(apiUrl('/api/tags'))
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setAvailableTags(data.tags.filter(t => t.is_active));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -181,11 +200,24 @@ export default function EventSubmissionForm({
     }
   };
 
+  const handleTagToggle = (tagId) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) {
+        return prev.filter(id => id !== tagId);
+      }
+      if (prev.length >= 3) return prev;
+      return [...prev, tagId];
+    });
+    if (errors.tag_ids) {
+      setErrors(prev => { const n = { ...prev }; delete n.tag_ids; return n; });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setServerError('');
 
-    const result = eventSchema.safeParse(formData);
+    const result = eventSchema.safeParse({ ...formData, tag_ids: selectedTagIds });
     if (!result.success) {
       const fieldErrors = {};
       for (const issue of result.error.issues) {
@@ -200,7 +232,7 @@ export default function EventSubmissionForm({
 
     setIsSubmitting(true);
     try {
-      const response = await onSubmit(result.data, flyerFile);
+      const response = await onSubmit({ ...result.data, tag_ids: selectedTagIds }, flyerFile);
       if (response && !response.success) {
         setServerError(response.message || 'An error occurred. Please try again.');
       }
@@ -384,6 +416,48 @@ export default function EventSubmissionForm({
               );
             })}
           </Box>
+        </Box>
+
+        {/* Tags — required, pick 1–3 */}
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            Tags{' '}
+            <Typography component="span" variant="caption" color="error.main">*</Typography>
+            <Typography component="span" variant="caption" color="text.disabled">
+              {' '}(select 1–3)
+            </Typography>
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {availableTags.map((tag) => {
+              const selected = selectedTagIds.includes(tag.tag_id);
+              const atMax = selectedTagIds.length >= 3 && !selected;
+              return (
+                <Chip
+                  key={tag.tag_id}
+                  label={tag.name}
+                  clickable={!atMax}
+                  onClick={() => !atMax && handleTagToggle(tag.tag_id)}
+                  variant={selected ? 'filled' : 'outlined'}
+                  color={selected ? 'primary' : 'default'}
+                  sx={{
+                    fontWeight: selected ? 600 : 400,
+                    opacity: atMax ? 0.4 : 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              );
+            })}
+            {availableTags.length === 0 && (
+              <Typography variant="caption" color="text.disabled">
+                No tags available yet.
+              </Typography>
+            )}
+          </Box>
+          {errors.tag_ids && (
+            <Typography variant="caption" color="error.main" sx={{ mt: 0.5, display: 'block' }}>
+              {errors.tag_ids}
+            </Typography>
+          )}
         </Box>
 
         {/* Flyer Upload — drag-and-drop zone */}
