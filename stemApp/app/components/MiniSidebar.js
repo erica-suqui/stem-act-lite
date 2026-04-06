@@ -8,6 +8,7 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
+import TuneIcon from '@mui/icons-material/Tune';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { clearStoredAuth } from '@/lib/storage';
 
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'Event Submissions', icon: <DashboardIcon />, href: '/superAdminDashboard' },
   { label: 'Partners',          icon: <BusinessIcon />,  href: '/partners' },
   { label: 'Users',             icon: <PeopleIcon />,    href: '/users' },
+  { label: 'Utilities',         icon: <TuneIcon />,      href: '/utilities' },
 ];
 
 export default function MiniSidebar({ children }) {
