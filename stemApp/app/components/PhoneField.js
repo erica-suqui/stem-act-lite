@@ -27,13 +27,13 @@ export default function PhoneField({ value, onChange, name, ...props }) {
       name={name}
       value={formatPhone(value)}
       onChange={handleChange}
-      inputMode="numeric"
       slotProps={{
         ...props.slotProps,
         input: {
           ...props.slotProps?.input,
+          inputMode: 'numeric',
           'aria-describedby': `${name}-helper`,
-          'aria-required': props.required ? 'true' : undefined,
+          'aria-required': props.required ? true : undefined,
         },
         formHelperText: { id: `${name}-helper` },
       }}
