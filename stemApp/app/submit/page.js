@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { apiUrl } from '@/lib/api';
-import { FlyerUpload } from '@/app/components/EventSubmissionForm';
+import FlyerUpload from '@/app/components/FlyerUpload';
 
 const AUDIENCE_OPTIONS = [
   'Students K-12',
