@@ -100,6 +100,9 @@ export default function LogIn(){
       }}>
         <Card elevation={4} sx={{ width: '100%', maxWidth: 420, p: 2 }}>
           <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button size="small" variant="text" aria-label="Exit login" onClick={() => router.push('/')}>✕ Exit</Button>
+            </Box>
             <Typography variant="h5" component = "h1"align="center" fontWeight={700} color="primary.dark" gutterBottom>
               Sign In
             </Typography>

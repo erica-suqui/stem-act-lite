@@ -7,10 +7,10 @@ import MiniSidebar from './MiniSidebar';
 import PartnerAppBar from './PartnerAppBar';
 
 // No nav at all
-const NO_NAV_ROUTES = new Set(['/submit', '/']);
+const NO_NAV_ROUTES = new Set(['/']);
 
 // Public layout (PublicAppBar, no auth)
-const PUBLIC_ROUTES = new Set(['/login', '/register', '/verify-email', '/become-a-partner']);
+const PUBLIC_ROUTES = new Set(['/login', '/register', '/verify-email', '/become-a-partner', '/submit']);
 
 // Partner layout (PartnerAppBar, RouteGuard)
 const PARTNER_ROUTES = new Set(['/partner']);
