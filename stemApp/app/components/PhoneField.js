@@ -18,7 +18,8 @@ function formatPhone(raw) {
 export default function PhoneField({ value, onChange, name, ...props }) {
   const handleChange = (e) => {
     const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
-    onChange({ target: { name, value: raw } });
+    // Note: editing mid-string jumps cursor to end — known limitation of controlled format inputs.
+    if (onChange) onChange({ target: { name, value: raw } });
   };
 
   return (
@@ -32,10 +33,11 @@ export default function PhoneField({ value, onChange, name, ...props }) {
         input: {
           ...props.slotProps?.input,
           inputMode: 'numeric',
-          'aria-describedby': `${name}-helper`,
+          // Only link aria-describedby when helperText exists; otherwise the id has no DOM target.
+          'aria-describedby': props.helperText ? `${name}-helper-text` : undefined,
           'aria-required': props.required ? true : undefined,
         },
-        formHelperText: { id: `${name}-helper` },
+        formHelperText: props.helperText ? { id: `${name}-helper-text` } : undefined,
       }}
     />
   );
