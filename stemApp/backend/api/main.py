@@ -303,6 +303,7 @@ class SubmitEventRequest(BaseModel):
     hyperlink: str = None
     event_contact: str = None
     event_type: str = None
+    tag_ids: list[int] = []
 
 
 class EditEventRequest(BaseModel):
@@ -318,6 +319,15 @@ class EditEventRequest(BaseModel):
     hyperlink: str = None
     event_contact: str = None
     event_type: str = None
+    tag_ids: list[int] = None
+
+
+class CreateTagRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+
+
+class UpdateTagRequest(BaseModel):
+    is_active: bool
 
 
 @app.post("/api/login")
@@ -619,17 +629,35 @@ def list_events(org_id: int = None, status: str = None, db: Session = Depends(ge
         else "NULL::DOUBLE PRECISION AS lat, NULL::DOUBLE PRECISION AS lng, NULL::TIMESTAMPTZ AS geocoded_at"
     )
     result = db.execute(text(f"""
-        SELECT event_id, org_id, submitter_name, submitter_email, title, description,
-               start_datetime, end_datetime, address, city, county, audience, cost,
-               hyperlink, event_contact, {event_type_field}, {flyer_url_field}, status, admin_comment, created_at,
-               {geocode_fields}
-        FROM events {where} ORDER BY created_at DESC
+        SELECT
+            e.event_id, e.org_id, e.submitter_name, e.submitter_email,
+            e.title, e.description, e.start_datetime, e.end_datetime,
+            e.address, e.city, e.county, e.audience, e.cost,
+            e.hyperlink, e.event_contact, {event_type_field}, {flyer_url_field}, e.status, e.admin_comment, e.created_at,
+            {geocode_fields},
+            COALESCE(
+                array_agg(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL),
+                ARRAY[]::TEXT[]
+            ) AS tag_names,
+            COALESCE(
+                array_agg(DISTINCT t.tag_id) FILTER (WHERE t.tag_id IS NOT NULL),
+                ARRAY[]::BIGINT[]
+            ) AS tag_ids
+        FROM events e
+        LEFT JOIN event_tags et ON et.event_id = e.event_id
+        LEFT JOIN tags t ON t.tag_id = et.tag_id
+        {where}
+        GROUP BY e.event_id
+        ORDER BY e.created_at DESC
     """), params)
     events = [dict(row) for row in result.mappings().all()]
     for e in events:
         for key in ("start_datetime", "end_datetime", "created_at"):
             if e.get(key) and hasattr(e[key], "isoformat"):
                 e[key] = e[key].isoformat()
+        # Convert DB arrays to plain Python lists
+        e["tag_names"] = list(e.get("tag_names") or [])
+        e["tag_ids"] = [int(i) for i in (e.get("tag_ids") or [])]
     return JSONResponse({"success": True, "events": events})
 
 
@@ -640,6 +668,19 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
             {"success": False, "message": "Submitter email is required for public submissions"},
             status_code=400,
         )
+
+    tag_ids = payload.tag_ids or []
+    if len(tag_ids) < 1:
+        return JSONResponse(
+            {"success": False, "message": "At least one tag is required"},
+            status_code=400,
+        )
+    if len(tag_ids) > 3:
+        return JSONResponse(
+            {"success": False, "message": "Maximum 3 tags allowed"},
+            status_code=400,
+        )
+
     try:
         column_flags = _get_event_column_flags(db)
         columns = [
@@ -658,6 +699,7 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
         columns.append("status")
         values.append("'pending'")
 
+        event_data = {k: v for k, v in payload.dict().items() if k != "tag_ids"}
         result = db.execute(
             text(f"""
                 INSERT INTO events
@@ -666,10 +708,18 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
                   ({", ".join(values)})
                 RETURNING event_id
             """),
-            payload.dict()
+            event_data,
         )
+        event_id = result.scalar()
+
+        for tag_id in tag_ids:
+            db.execute(
+                text("INSERT INTO event_tags (event_id, tag_id) VALUES (:event_id, :tag_id)"),
+                {"event_id": event_id, "tag_id": tag_id},
+            )
+
         db.commit()
-        return JSONResponse({"success": True, "event_id": result.scalar()}, status_code=201)
+        return JSONResponse({"success": True, "event_id": event_id}, status_code=201)
     except Exception as e:
         db.rollback()
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)
@@ -679,33 +729,70 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
 def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(get_db)):
     event = db.execute(
         text("SELECT start_datetime FROM events WHERE event_id = :event_id"),
-        {"event_id": event_id}
+        {"event_id": event_id},
     ).mappings().first()
-    
+
     if event is None:
         return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
-    
+
     if event["start_datetime"] and event["start_datetime"] < datetime.now(timezone.utc):
         return JSONResponse({"success": False, "message": "Cannot edit a past event"}, status_code=400)
 
+    # Validate tags if provided
+    tag_ids = payload.tag_ids
+    if tag_ids is not None:
+        if len(tag_ids) < 1:
+            return JSONResponse(
+                {"success": False, "message": "At least one tag is required"},
+                status_code=400,
+            )
+        if len(tag_ids) > 3:
+            return JSONResponse(
+                {"success": False, "message": "Maximum 3 tags allowed"},
+                status_code=400,
+            )
+
+    # Build event field updates — exclude tag_ids, it is not an events column
     column_flags = _get_event_column_flags(db)
-    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    updates = {
+        k: v for k, v in payload.dict().items()
+        if v is not None and k != "tag_ids"
+    }
     if not column_flags["event_type"]:
         updates.pop("event_type", None)
-    if not updates:
+    if not updates and tag_ids is None:
         return JSONResponse({"success": False, "message": "No fields to update"}, status_code=400)
-    updates["status"] = "pending"
-    updates["admin_comment"] = None
-    updates["event_id"] = event_id
-    set_clause = ", ".join(f"{k} = :{k}" for k in updates if k != "event_id")
-    result = db.execute(
-        text(f"UPDATE events SET {set_clause} WHERE event_id = :event_id RETURNING event_id"),
-        updates
-    )
-    db.commit()
-    if result.rowcount == 0:
-        return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
-    return {"success": True}
+
+    try:
+        if updates:
+            updates["status"] = "pending"
+            updates["admin_comment"] = None
+            updates["event_id"] = event_id
+            set_clause = ", ".join(f"{k} = :{k}" for k in updates if k != "event_id")
+            result = db.execute(
+                text(f"UPDATE events SET {set_clause} WHERE event_id = :event_id RETURNING event_id"),
+                updates,
+            )
+            if result.rowcount == 0:
+                db.rollback()
+                return JSONResponse({"success": False, "message": "Event not found"}, status_code=404)
+
+        if tag_ids is not None:
+            db.execute(
+                text("DELETE FROM event_tags WHERE event_id = :event_id"),
+                {"event_id": event_id},
+            )
+            for tag_id in tag_ids:
+                db.execute(
+                    text("INSERT INTO event_tags (event_id, tag_id) VALUES (:event_id, :tag_id)"),
+                    {"event_id": event_id, "tag_id": tag_id},
+                )
+
+        db.commit()
+        return {"success": True}
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
 if MULTIPART_INSTALLED:
@@ -1321,4 +1408,52 @@ def post_event_comment(event_id: int, payload: PostCommentRequest, background_ta
             f"An admin has replied to your event \"{title}\".\n\nMessage:\n{payload.body.strip()}\n\nView the full thread in your partner dashboard.",
         )
 
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
+
+@app.get("/api/tags")
+def list_tags(db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("SELECT tag_id, name, slug, is_active, created_at FROM tags ORDER BY name ASC")
+    ).mappings().all()
+    return {"success": True, "tags": [dict(r) for r in rows]}
+
+
+@app.post("/api/tags")
+def create_tag(payload: CreateTagRequest, db: Session = Depends(get_db)):
+    name = payload.name.strip()
+    slug = name.lower().replace(" ", "-")
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO tags (name, slug)
+                VALUES (:name, :slug)
+                RETURNING tag_id, name, slug, is_active
+            """),
+            {"name": name, "slug": slug},
+        )
+        db.commit()
+        return {"success": True, "tag": dict(result.mappings().first())}
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(e)}, status_code=409)
+
+
+@app.patch("/api/tags/{tag_id}")
+def update_tag(tag_id: int, payload: UpdateTagRequest, db: Session = Depends(get_db)):
+    result = db.execute(
+        text("""
+            UPDATE tags SET is_active = :is_active
+            WHERE tag_id = :tag_id
+            RETURNING tag_id
+        """),
+        {"is_active": payload.is_active, "tag_id": tag_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        return JSONResponse({"success": False, "message": "Tag not found"}, status_code=404)
     return {"success": True}
