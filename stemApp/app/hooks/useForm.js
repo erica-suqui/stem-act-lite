@@ -1,4 +1,4 @@
-// stemApp/app/hooks/useField.js
+// stemApp/app/hooks/useForm.js
 'use client';
 import { useState, useCallback } from 'react';
 
@@ -19,9 +19,12 @@ function extractErrors(zodResult) {
 }
 
 /**
- * useField — form state + validation lifecycle hook
+ * useForm — form state + validation lifecycle hook
  *
- * @param {object} schema      - Zod schema for the whole form
+ * IMPORTANT: Define your Zod schema outside the component (or in useMemo) to avoid
+ * re-creating it on every render, which would defeat useCallback memoization.
+ *
+ * @param {object} schema      - Zod schema for the whole form (must be stable reference)
  * @param {object} initial     - initial field values { fieldName: '' }
  * @param {function} onSubmit  - async (validData) => void, called only when schema passes
  * @returns {{ values, errors, touched, handleChange, handleBlur, handleSubmit, setValues }}
@@ -35,7 +38,7 @@ function extractErrors(zodResult) {
  * - On change after touch: re-validate immediately (live feedback)
  * - On submit: mark all fields touched + validate all at once
  */
-export function useField(schema, initial, onSubmit) {
+export function useForm(schema, initial, onSubmit) {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -48,22 +51,28 @@ export function useField(schema, initial, onSubmit) {
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    const next = { ...values, [name]: value };
-    setValues(next);
-    if (touched[name]) {
-      const error = validateOne(name, next);
-      setErrors(prev => {
-        const updated = { ...prev };
-        if (error) updated[name] = error;
-        else delete updated[name];
-        return updated;
-      });
-    }
-  }, [values, touched, validateOne]);
+    // Use functional updater to avoid closing over stale `values` snapshot.
+    // React 18 batches the setErrors call inside the updater into the same render.
+    setValues(prev => {
+      const next = { ...prev, [name]: value };
+      if (touched[name]) {
+        const error = validateOne(name, next);
+        setErrors(errPrev => {
+          const updated = { ...errPrev };
+          if (error) updated[name] = error;
+          else delete updated[name];
+          return updated;
+        });
+      }
+      return next;
+    });
+  }, [touched, validateOne]);
 
   const handleBlur = useCallback((e) => {
     const { name } = e.target;
     setTouched(prev => ({ ...prev, [name]: true }));
+    // `values` here is the committed state from the last render — correct for blur,
+    // since handleChange already flushed the typed value into state.
     const error = validateOne(name, values);
     setErrors(prev => {
       const updated = { ...prev };
@@ -75,8 +84,8 @@ export function useField(schema, initial, onSubmit) {
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    // Touch all fields so errors appear
-    const allTouched = Object.fromEntries(Object.keys(initial).map(k => [k, true]));
+    // Touch all live values keys (not `initial`) to handle dynamically added fields.
+    const allTouched = Object.fromEntries(Object.keys(values).map(k => [k, true]));
     setTouched(allTouched);
 
     const result = schema.safeParse(values);
@@ -86,7 +95,7 @@ export function useField(schema, initial, onSubmit) {
     }
     setErrors({});
     onSubmit(result.data);
-  }, [values, schema, initial, onSubmit]);
+  }, [values, schema, onSubmit]);
 
   return { values, errors, touched, handleChange, handleBlur, handleSubmit, setValues };
 }
