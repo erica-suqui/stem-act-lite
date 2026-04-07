@@ -81,10 +81,6 @@ export default function PublicEventsClient({ events }) {
 
   return (
     <Box sx={{ position: 'relative' }}>
-      <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab label="Cards" />
-        <Tab label="Map" />
-      </Tabs>
 
       {mounted && (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -154,19 +150,25 @@ export default function PublicEventsClient({ events }) {
                 Clear Filters
               </Button>
             )}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              aria-live="polite"
-              aria-atomic="true"
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
-            </Typography>
           </Stack>
         </LocalizationProvider>
       )}
-
+      <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+        <Tab label="Cards" />
+        <Tab label="Map" />
+      </Tabs>
+      <Typography 
+              variant="body1"
+              color="text.secondary"
+              aria-live="polite"
+              aria-atomic="true"
+              sx={{ 
+                display: 'block',
+                py: '8px',
+                my: '4px'}}
+            >
+              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
+            </Typography>
       {tab === 0 && (
         filtered.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -182,7 +184,7 @@ export default function PublicEventsClient({ events }) {
                     height: '100%', display: 'flex', flexDirection: 'column',
                     cursor: 'pointer',
                     '&:hover': { boxShadow: 6 },
-                    transition: 'box-shadow 0.2s',
+                    transition: 'box-shadow 0.2s'
                   }}
                   onClick={() => setSelectedEvent(event)}
                 >
