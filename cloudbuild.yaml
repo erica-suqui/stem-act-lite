@@ -1,0 +1,60 @@
+steps:
+  # Build backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/backend:$COMMIT_SHA'
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/backend:latest'
+      - -f
+      - stemApp/backend/Dockerfile
+      - stemApp/backend
+
+  # Push backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/backend']
+
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - stemact-backend
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/backend:$COMMIT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+
+  # Build frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/frontend:$COMMIT_SHA'
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/frontend:latest'
+      - -f
+      - stemApp/Dockerfile.nextjs
+      - stemApp
+
+  # Push frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/frontend']
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - stemact-frontend
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/stemact-images/frontend:$COMMIT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+
+substitutions:
+  _REGION: us-east1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
