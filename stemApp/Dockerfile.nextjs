@@ -18,6 +18,5 @@ COPY --from=builder --chown=appuser:appgroup /app/.next/standalone ./
 COPY --from=builder --chown=appuser:appgroup /app/.next/static ./.next/static
 COPY --from=builder --chown=appuser:appgroup /app/public ./public
 
-ENV PORT=3000
-EXPOSE 3000
+EXPOSE 8080
 CMD node server.js
