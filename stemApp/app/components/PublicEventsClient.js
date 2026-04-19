@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Box, Grid, Card, CardContent, CardActions, CardMedia, Typography,
+  Box, Card, CardContent, CardActions, CardMedia, Typography,
   Button, Select, MenuItem, FormControl, InputLabel, Chip, Stack,
   Tabs, Tab, TextField, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
@@ -122,10 +122,10 @@ export default function PublicEventsClient({ events }) {
             />
             <FormControl size="small" sx={{ width: 150 }}>
               <InputLabel id="county-label">County</InputLabel>
-              <Select labelId="county-label" value={county} label="County"onChange={e => {
-                    setCounty(e.target.value);
-                    if (e.target.value) setTab(1);
-                  }}>
+              <Select labelId="county-label" value={county} label="County" onChange={e => {
+                setCounty(e.target.value);
+                if (e.target.value) setTab(1);
+              }}>
                 <MenuItem value="">All Counties</MenuItem>
                 {CT_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
@@ -153,114 +153,123 @@ export default function PublicEventsClient({ events }) {
           </Stack>
         </LocalizationProvider>
       )}
+
       <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Cards" />
         <Tab label="Map" />
       </Tabs>
-      <Typography 
-              variant="body1"
-              color="text.secondary"
-              aria-live="polite"
-              aria-atomic="true"
-              sx={{ 
-                display: 'block',
-                py: '8px',
-                my: '4px'}}
-            >
-              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
-            </Typography>
+
+      <Typography
+        variant="body1"
+        color="text.secondary"
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{ display: 'block', py: '8px', my: '4px' }}
+      >
+        {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
+      </Typography>
+
       {tab === 0 && (
         filtered.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography color="text.secondary">No events found. Try clearing the filters.</Typography>
           </Box>
         ) : (
-          <Grid container spacing={3}>
+          <Stack spacing={3}>
             {filtered.map(event => (
-              <Grid item xs={12} sm={6} md={4} key={event.event_id}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: '100%', display: 'flex', flexDirection: 'column',
-                    cursor: 'pointer',
-                    '&:hover': { boxShadow: 6 },
-                    transition: 'box-shadow 0.2s'
-                  }}
-                  onClick={() => setSelectedEvent(event)}
-                >
-                  {event.flyer_url && (
-                    isImageUrl(event.flyer_url) ? (
-                      <CardMedia
-                        component="img"
-                        height={160}
-                        image={event.flyer_url}
-                        alt={`Flyer for ${event.title}`}
-                        sx={{ objectFit: 'cover' }}
-                        loading="lazy"
-                      />
-                    ) : isPdfUrl(event.flyer_url) ? (
-                      // TODO: When backend thumbnail generation is available, replace this placeholder
-                      // with an <img> from a server-side endpoint e.g. GET /api/events/:id/flyer-thumbnail
-                      // that renders the first page of the PDF as an image (e.g. using pdf2pic or Puppeteer).
-                      <Box
-                        role="img"
-                        aria-label={`PDF flyer for ${event.title}`}
-                        sx={{
-                          height: 160,
-                          bgcolor: 'grey.100',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 1,
-                          borderBottom: '1px solid',
-                          borderColor: 'divider',
-                        }}
-                      >
-                        <PictureAsPdfIcon sx={{ fontSize: 40, color: 'grey.400' }} />
-                        <Typography variant="caption" color="text.secondary">PDF Flyer</Typography>
-                      </Box>
-                    ) : null
-                  )}
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" component="h2" gutterBottom sx={{ lineHeight: 1.3 }}>
-                      {event.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {event.start_datetime
-                        ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'Date TBD'
-                      } · {event.city}, {event.county}
-                    </Typography>
-                    {event.cost && (
-                      <Chip label={event.cost} size="small" sx={{ mb: 1 }} />
-                    )}
-                    {event.event_type && (
-                      <Chip label={event.event_type} size="small" variant="outlined" sx={{ mb: 1, ml: event.cost ? 1 : 0 }} />
-                    )}
-                    <Typography variant="body2" sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}>
-                      {event.description}
-                    </Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      aria-label={`More Info: ${event.title}`}
-                      onClick={e => { e.stopPropagation(); setSelectedEvent(event); }}
+              <Card
+                key={event.event_id}
+                elevation={2}
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  cursor: 'pointer',
+                  '&:hover': { boxShadow: 6 },
+                  transition: 'box-shadow 0.2s',
+                }}
+                onClick={() => setSelectedEvent(event)}
+              >
+                {event.flyer_url && (
+                  isImageUrl(event.flyer_url) ? (
+                    <CardMedia
+                      component="img"
+                      height={160}
+                      image={event.flyer_url}
+                      alt={`Flyer for ${event.title}`}
+                      sx={{ objectFit: 'cover' }}
+                      loading="lazy"
+                    />
+                  ) : isPdfUrl(event.flyer_url) ? (
+                    // TODO: When backend thumbnail generation is available, replace this placeholder
+                    // with an <img> from a server-side endpoint e.g. GET /api/events/:id/flyer-thumbnail
+                    // that renders the first page of the PDF as an image (e.g. using pdf2pic or Puppeteer).
+                    <Box
+                      role="img"
+                      aria-label={`PDF flyer for ${event.title}`}
+                      sx={{
+                        height: 160,
+                        bgcolor: 'grey.100',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 1,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                      }}
                     >
-                      More Info
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
+                      <PictureAsPdfIcon sx={{ fontSize: 40, color: 'grey.400' }} />
+                      <Typography variant="caption" color="text.secondary">PDF Flyer</Typography>
+                    </Box>
+                  ) : null
+                )}
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" component="h2" gutterBottom sx={{ lineHeight: 1.3 }}>
+                    {event.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    {event.start_datetime
+                      ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'Date TBD'
+                    } · {event.city}, {event.county}
+                  </Typography>
+                  {event.cost && (
+                      <Chip 
+                        label={event.cost} 
+                        size="small" 
+                        sx={{ 
+                          mb: 1,
+                          bgcolor: event.cost.toLowerCase().includes('free') ? 'success.main' : 'primary.dark',
+                          color: 'white'
+                        }}
+                      />
+                    )}
+                  {event.event_type && (
+                    <Chip label={event.event_type} size="small" variant="outlined" sx={{ mb: 1, ml: event.cost ? 1 : 0 }} />
+                  )}
+                  <Typography variant="body2" sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}>
+                    {event.description}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    aria-label={`More Info: ${event.title}`}
+                    onClick={e => { e.stopPropagation(); setSelectedEvent(event); }}
+                  >
+                    More Info
+                  </Button>
+                </CardActions>
+              </Card>
             ))}
-          </Grid>
+          </Stack>
         )
       )}
 
