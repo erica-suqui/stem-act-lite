@@ -1,14 +1,21 @@
-import os
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from google.cloud.sql.connector import Connector
+import sqlalchemy
 
-load_dotenv()
+def create_engine():
+    connector = Connector()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+    def getconn():
+        conn = connector.connect(
+            "storied-precept-491812-u8:us-east1:stemact-db",
+            "pg8000",
+            user="stemact-user",
+            password=os.getenv("PASSWORD"),
+            db="stemact-events",
+        )
+        return conn
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
-class Base(DeclarativeBase):
-    pass
+    engine = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=getconn,
+    )
+    return engine
