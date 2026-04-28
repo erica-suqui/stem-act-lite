@@ -219,26 +219,31 @@ const TIME_PERIOD_OPTIONS = ['AM', 'PM'];
 const splitDateTimeValue = (value) => {
   if (!value) return { date: '', hour: '', minute: '00', period: 'AM' };
 
-  const normalized = String(value).trim();
-  const [datePart = '', timePart = ''] = normalized.split('T');
-  if (!datePart) return { date: '', hour: '', minute: '00', period: 'AM' };
-
-  const [hours = '', minutes = ''] = timePart.split(':');
-  const hourNumber = Number(hours);
-  const minuteValue = minutes.slice(0, 2);
-  if (!Number.isFinite(hourNumber) || !minuteValue) {
-    return { date: datePart, hour: '', minute: '00', period: 'AM' };
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return { date: '', hour: '', minute: '00', period: 'AM' };
   }
 
+  const hourNumber = parsed.getHours();
+  const minuteValue = String(parsed.getMinutes()).padStart(2, '0');
   const period = hourNumber >= 12 ? 'PM' : 'AM';
   const normalizedHour = hourNumber % 12 || 12;
 
   return {
-    date: datePart,
+    date: `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`,
     hour: String(normalizedHour),
     minute: TIME_MINUTE_OPTIONS.includes(minuteValue) ? minuteValue : '00',
     period,
   };
+};
+
+const getLocalTimezoneOffset = () => {
+  const offsetMinutes = -new Date().getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteMinutes = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, '0');
+  const minutes = String(absoluteMinutes % 60).padStart(2, '0');
+  return `${sign}${hours}:${minutes}`;
 };
 
 const combineDateTimeValue = (date, hour, minute, period) => {
@@ -255,7 +260,7 @@ const combineDateTimeValue = (date, hour, minute, period) => {
     normalizedHour += 12;
   }
 
-  return `${date}T${String(normalizedHour).padStart(2, '0')}:${minute}`;
+  return `${date}T${String(normalizedHour).padStart(2, '0')}:${minute}:00${getLocalTimezoneOffset()}`;
 };
 
 const normalizeMunicipalityName = (value) =>
