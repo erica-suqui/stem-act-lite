@@ -29,6 +29,19 @@ function isPdfUrl(url) {
   return /\.pdf(\?|#|\/|$)/i.test(url);
 }
 
+function formatEventDate(iso) {
+  if (!iso) return 'Date TBD';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatEventTimeRange(startIso, endIso) {
+  if (!startIso) return 'Time TBD';
+  const start = new Date(startIso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  if (!endIso) return start;
+  const end = new Date(endIso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return `${start} – ${end}`;
+}
+
 export default function PublicEventsClient({ events }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -81,10 +94,6 @@ export default function PublicEventsClient({ events }) {
 
   return (
     <Box sx={{ position: 'relative' }}>
-      <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab label="Cards" />
-        <Tab label="Map" />
-      </Tabs>
 
       {mounted && (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -154,37 +163,41 @@ export default function PublicEventsClient({ events }) {
                 Clear Filters
               </Button>
             )}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              aria-live="polite"
-              aria-atomic="true"
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
-            </Typography>
           </Stack>
         </LocalizationProvider>
       )}
-
+      <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+        <Tab label="Cards" />
+        <Tab label="Map" />
+      </Tabs>
+      <Typography 
+              variant="body1"
+              color="text.secondary"
+              aria-live="polite"
+              aria-atomic="true"
+              sx={{ 
+                display: 'block',
+                py: '8px',
+                my: '4px'}}
+            >
+              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
+            </Typography>
       {tab === 0 && (
         filtered.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography color="text.secondary">No events found. Try clearing the filters.</Typography>
           </Box>
         ) : (
-          <Grid container spacing={3}>
+          <Stack spacing={3}>
             {filtered.map(event => (
-              <Grid item xs={12} sm={6} md={4} key={event.event_id}>
+              <Box key={event.event_id}>
                 <Card
                   elevation={2}
                   sx={{
                     height: '100%', display: 'flex', flexDirection: 'column',
-                    cursor: 'pointer',
                     '&:hover': { boxShadow: 6 },
-                    transition: 'box-shadow 0.2s',
+                    transition: 'box-shadow 0.2s'
                   }}
-                  onClick={() => setSelectedEvent(event)}
                 >
                   {event.flyer_url && (
                     isImageUrl(event.flyer_url) ? (
@@ -225,40 +238,57 @@ export default function PublicEventsClient({ events }) {
                       {event.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {event.start_datetime
-                        ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'Date TBD'
-                      } · {event.city}, {event.county}
+                      {formatEventDate(event.start_datetime)} · {event.city}, {event.county}
                     </Typography>
-                    {event.cost && (
-                      <Chip label={event.cost} size="small" sx={{ mb: 1 }} />
-                    )}
-                    {event.event_type && (
-                      <Chip label={event.event_type} size="small" variant="outlined" sx={{ mb: 1, ml: event.cost ? 1 : 0 }} />
-                    )}
-                    <Typography variant="body2" sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}>
+                    <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mb: 1.5 }}>
+                      <Chip label={formatEventTimeRange(event.start_datetime, event.end_datetime)} color="secondary" size="small" />
+                      {event.audience && <Chip label={event.audience} color="info" size="small" />}
+                      {event.cost && <Chip label={event.cost} color="success" size="small" />}
+                      {event.event_type && <Chip label={event.event_type} size="small" variant="outlined" />}
+                    </Stack>
+                    <Typography variant="body2" paragraph>
                       {event.description}
                     </Typography>
+                    {event.address && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Address:</strong> {event.address}, {event.city}, CT
+                      </Typography>
+                    )}
+                    {event.flyer_url && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Flyer:</strong>{' '}
+                        <a href={event.flyer_url} target="_blank" rel="noopener noreferrer">
+                          View Flyer
+                        </a>
+                      </Typography>
+                    )}
+                    {event.event_contact && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Contact:</strong>{' '}
+                        <Link href={`mailto:${event.event_contact}`}>
+                          {event.event_contact}
+                        </Link>
+                      </Typography>
+                    )}
                   </CardContent>
-                  <CardActions>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      aria-label={`More Info: ${event.title}`}
-                      onClick={e => { e.stopPropagation(); setSelectedEvent(event); }}
-                    >
-                      More Info
-                    </Button>
-                  </CardActions>
+                  {event.hyperlink && (
+                    <CardActions>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        component={Link}
+                        href={event.hyperlink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Event Link
+                      </Button>
+                    </CardActions>
+                  )}
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Stack>
         )
       )}
 
@@ -274,14 +304,14 @@ export default function PublicEventsClient({ events }) {
           <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mb: 2 }}>
             <Chip
               label={selectedEvent?.start_datetime
-                ? new Date(selectedEvent.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                ? formatEventDate(selectedEvent.start_datetime)
                 : 'Date TBD'}
               color="primary"
               size="small"
             />
             <Chip
               label={selectedEvent?.start_datetime
-                ? `${new Date(selectedEvent.start_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}${selectedEvent?.end_datetime ? ` – ${new Date(selectedEvent.end_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                ? formatEventTimeRange(selectedEvent.start_datetime, selectedEvent.end_datetime)
                 : 'Time TBD'}
               color="secondary"
               size="small"

@@ -71,7 +71,10 @@ function CTCountiesLayer({ events, selectedCounty, setSelectedCounty }) {
               map.fitBounds(e.target.getBounds());
             }
           },
-          mouseover: (e) => e.target.setStyle({ fillOpacity: isSelected ? 0.1 : 0.3 }),
+          mouseover: (e) => {
+            const isSelected = selectedCounty === countyName;
+            e.target.setStyle({ fillOpacity: isSelected ? 0.1 : 0.3 });
+          },
           mouseout: (e) => {
             const name = e.target.feature.properties.County.replace(' County', '');
             e.target.setStyle({ fillOpacity: selectedCounty === name ? 0 : 0.15 });
@@ -239,7 +242,7 @@ export default function EventsMap({ events, setCounty, county, onSelectEvent }) 
         >
           <TileLayer
             attribution='&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+            url="https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png"
           />
           <CTCountiesLayer events={events} selectedCounty={county} setSelectedCounty={setCounty} />
           <MarkersLayer mappable={mappable} />
