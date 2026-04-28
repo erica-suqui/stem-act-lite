@@ -9,6 +9,7 @@
     "backend:dev": "python3 -m uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
     "db:up": "docker compose -f db/docker-compose.yml up -d",
     "db:down": "docker compose -f db/docker-compose.yml down",
+    "user:create-partner": "node --env-file=.env.local scripts/create-partner.mjs",
     "user:create-super-admin": "node --env-file=.env.local scripts/create-super-admin.mjs",
     "db:seed-demo-events": "node --env-file=.env.local scripts/seed-demo-events.mjs",
     "db:init": "psql \"$DATABASE_URL\" -f db/schema.sql",
