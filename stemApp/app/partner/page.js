@@ -25,8 +25,7 @@ import {
 import { apiUrl } from '@/lib/api';
 import EventSubmissionForm from '@/app/components/EventSubmissionForm';
 import Toast from '@/app/components/Toast';
-import SignOutButton from '@/app/components/SignOutButton';
-import { getStoredItem,clearStoredAuth } from '@/lib/storage';
+import { getStoredItem } from '@/lib/storage';
 
 const STATUS_CONFIG = {
   pending:  { color: 'warning',  label: 'Pending' },
@@ -36,6 +35,7 @@ const STATUS_CONFIG = {
 
 export default function PartnerDashboard() {
   const [events, setEvents] = useState([]);
+  const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
@@ -50,14 +50,38 @@ export default function PartnerDashboard() {
   const orgId = typeof window !== 'undefined' ? getStoredItem('orgId') : null;
   const userId = typeof window !== 'undefined' ? getStoredItem('userID') : null;
 
+  const formatPhone = (phone) => {
+    if (!phone) return '—';
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) return phone;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
+
+  const formatContactName = (org) => {
+    if (!org) return '—';
+    const fullName = [org.contact_first_name, org.contact_last_name].filter(Boolean).join(' ').trim();
+    return fullName || '—';
+  };
+
   const fetchEvents = useCallback(async () => {
     if (!orgId) return;
     setLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/events?org_id=${orgId}`));
-      if (!res.ok) throw new Error('Failed to fetch events');
-      const data = await res.json();
-      setEvents(Array.isArray(data.events) ? data.events : []);
+      const [eventsRes, orgRes] = await Promise.all([
+        fetch(apiUrl(`/api/events?org_id=${orgId}`)),
+        fetch(apiUrl(`/api/organizations/${orgId}`)),
+      ]);
+      if (!eventsRes.ok) throw new Error('Failed to fetch events');
+
+      const eventsData = await eventsRes.json();
+      setEvents(Array.isArray(eventsData.events) ? eventsData.events : []);
+
+      if (orgRes.ok) {
+        const orgData = await orgRes.json();
+        setOrganization(orgData.success ? orgData.organization : null);
+      } else {
+        setOrganization(null);
+      }
     } catch (err) {
       addToast('Failed to load events.', 'error');
     } finally {
@@ -187,14 +211,54 @@ export default function PartnerDashboard() {
     <Box sx={{ p: 3 }}>
       <Toast toasts={toasts} onDismiss={dismissToast} />
 
+      {organization && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 3,
+            p: 2.5,
+            borderRadius: 2,
+            bgcolor: 'grey.50',
+          }}
+        >
+          <Typography variant="h6" fontWeight={700} color="primary.dark" gutterBottom>
+            Account Details
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Signed in as {organization.org_name}
+          </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+              gap: 2,
+            }}
+          >
+            <Box>
+              <Typography variant="caption" color="text.secondary">Organization</Typography>
+              <Typography variant="body1" fontWeight={600}>{organization.org_name || '—'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Contact Name</Typography>
+              <Typography variant="body1" fontWeight={600}>{formatContactName(organization)}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Email</Typography>
+              <Typography variant="body1" fontWeight={600}>{organization.contact_email || '—'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Phone</Typography>
+              <Typography variant="body1" fontWeight={600}>{formatPhone(organization.contact_phone)}</Typography>
+            </Box>
+          </Box>
+        </Paper>
+      )}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">My Events</Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" onClick={() => setSubmitOpen(true)}>
-            + Submit New Event
-          </Button>
-          <SignOutButton />
-        </Stack>
+        <Button variant="contained" onClick={() => setSubmitOpen(true)}>
+          + Submit New Event
+        </Button>
       </Box>
 
       {loading ? (
