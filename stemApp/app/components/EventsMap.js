@@ -71,7 +71,10 @@ function CTCountiesLayer({ events, selectedCounty, setSelectedCounty }) {
               map.fitBounds(e.target.getBounds());
             }
           },
-          mouseover: (e) => e.target.setStyle({ fillOpacity: isSelected ? 0.1 : 0.3 }),
+          mouseover: (e) => {
+            const isSelected = selectedCounty === countyName;
+            e.target.setStyle({ fillOpacity: isSelected ? 0.1 : 0.3 });
+          },
           mouseout: (e) => {
             const name = e.target.feature.properties.County.replace(' County', '');
             e.target.setStyle({ fillOpacity: selectedCounty === name ? 0 : 0.15 });

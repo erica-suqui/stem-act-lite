@@ -173,6 +173,24 @@ def _get_event_column_flags(db: Session) -> dict:
     }
 
 
+def _has_user_google_sub_column(db: Session) -> bool:
+    row = db.execute(
+        text(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'users'
+                  AND column_name = 'google_sub'
+            ) AS has_google_sub
+            """
+        )
+    ).mappings().first()
+
+    return bool(row and row["has_google_sub"])
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -670,11 +688,6 @@ def submit_event(payload: SubmitEventRequest, db: Session = Depends(get_db)):
         )
 
     tag_ids = payload.tag_ids or []
-    if len(tag_ids) < 1:
-        return JSONResponse(
-            {"success": False, "message": "At least one tag is required"},
-            status_code=400,
-        )
     if len(tag_ids) > 3:
         return JSONResponse(
             {"success": False, "message": "Maximum 3 tags allowed"},
@@ -741,11 +754,6 @@ def edit_event(event_id: int, payload: EditEventRequest, db: Session = Depends(g
     # Validate tags if provided
     tag_ids = payload.tag_ids
     if tag_ids is not None:
-        if len(tag_ids) < 1:
-            return JSONResponse(
-                {"success": False, "message": "At least one tag is required"},
-                status_code=400,
-            )
         if len(tag_ids) > 3:
             return JSONResponse(
                 {"success": False, "message": "Maximum 3 tags allowed"},
@@ -1080,6 +1088,12 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/users/{user_id}/unlink-google")
 def unlink_google(user_id: int, db: Session = Depends(get_db)):
+    if not _has_user_google_sub_column(db):
+        return JSONResponse(
+            {"success": False, "message": "Google account linking is not enabled in this database."},
+            status_code=400,
+        )
+
     target = db.execute(
         text("SELECT user_id, google_sub FROM users WHERE user_id = :user_id"),
         {"user_id": user_id},

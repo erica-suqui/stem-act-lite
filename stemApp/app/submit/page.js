@@ -58,7 +58,6 @@ const publicSchema = z.object({
   event_type: z.string().optional(),
   event_contact: z.union([z.literal(''), z.string().email('Must be a valid email')]).optional(),
   tag_ids: z.array(z.number())
-    .min(1, 'At least one tag is required')
     .max(3, 'Maximum 3 tags allowed'),
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -110,8 +110,9 @@ export default function PartnerDashboard() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        addToast(err.detail || 'Failed to submit event.', 'error');
-        return { success: false, message: err.detail || 'Failed to submit event.' };
+        const errorMessage = err.message || err.detail || 'Failed to submit event.';
+        addToast(errorMessage, 'error');
+        return { success: false, message: errorMessage };
       }
       const data = await res.json();
       if (flyerFile && data.event_id) {
@@ -142,8 +143,9 @@ export default function PartnerDashboard() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        addToast(err.detail || 'Failed to update event.', 'error');
-        return { success: false, message: err.detail || 'Failed to update event.' };
+        const errorMessage = err.message || err.detail || 'Failed to update event.';
+        addToast(errorMessage, 'error');
+        return { success: false, message: errorMessage };
       }
       if (flyerFile) {
         const form = new FormData();
@@ -283,8 +285,8 @@ export default function PartnerDashboard() {
               {events.map((event) => {
                 const statusCfg = STATUS_CONFIG[event.status] || { color: 'default', label: event.status };
                 return (
-                  <>
-                    <TableRow key={event.event_id}>
+                  <Fragment key={event.event_id}>
+                    <TableRow>
                       <TableCell>{event.title}</TableCell>
                       <TableCell>
                         {event.start_datetime
@@ -361,7 +363,7 @@ export default function PartnerDashboard() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </TableBody>
