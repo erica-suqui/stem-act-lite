@@ -10,13 +10,27 @@ export const metadata = {
 export const dynamic = 'force-dynamic';
 
 async function getUsers() {
+	const columnCheck = await pool.query(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = 'users'
+			  AND column_name = 'google_sub'
+		) AS has_google_sub
+	`);
+	const hasGoogleSub = Boolean(columnCheck.rows[0]?.has_google_sub);
+	const googleLinkedSelect = hasGoogleSub
+		? 'u.google_sub IS NOT NULL AS google_linked'
+		: 'FALSE AS google_linked';
+
 	const result = await pool.query(`
 		SELECT
 			u.user_id,
 			u.email,
 			u.role,
 			o.org_name,
-			u.google_sub IS NOT NULL AS google_linked
+			${googleLinkedSelect}
 		FROM users u
 		LEFT JOIN organizations o ON o.org_id = u.org_id
 		ORDER BY u.user_id DESC
