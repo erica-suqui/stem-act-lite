@@ -1,19 +1,19 @@
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
-import AdminNav from './components/AdminNav';
 import ThemeRegistry from './components/ThemeRegistry';
-
+import ConditionalLayout from './components/ConditionalLayout';
 export const metadata = {
   title: 'STEM-ACT',
   description: 'STEM events across Connecticut',
 };
 
 export default function RootLayout({ children }) {
+  
   return (
     <html lang="en">
       <body>
         <ThemeRegistry>
-          <AdminNav>{children}</AdminNav>
+         <ConditionalLayout>{children}</ConditionalLayout> 
         </ThemeRegistry>
       </body>
     </html>
