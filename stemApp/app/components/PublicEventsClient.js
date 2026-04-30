@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Box, Grid, Card, CardContent, CardActions, CardMedia, Typography,
+  Box, Card, CardContent, CardActions, CardMedia, Typography,
   Button, Select, MenuItem, FormControl, InputLabel, Chip, Stack,
   Tabs, Tab, TextField, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
@@ -135,10 +135,10 @@ export default function PublicEventsClient({ events }) {
             />
             <FormControl size="small" sx={{ width: 150 }}>
               <InputLabel id="county-label">County</InputLabel>
-              <Select labelId="county-label" value={county} label="County"onChange={e => {
-                    setCounty(e.target.value);
-                    if (e.target.value) setTab(1);
-                  }}>
+              <Select labelId="county-label" value={county} label="County" onChange={e => {
+                setCounty(e.target.value);
+                if (e.target.value) setTab(1);
+              }}>
                 <MenuItem value="">All Counties</MenuItem>
                 {CT_COUNTIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
@@ -166,22 +166,22 @@ export default function PublicEventsClient({ events }) {
           </Stack>
         </LocalizationProvider>
       )}
+
       <Tabs value={tab} aria-label="Event display options" onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Cards" />
         <Tab label="Map" />
       </Tabs>
-      <Typography 
-              variant="body1"
-              color="text.secondary"
-              aria-live="polite"
-              aria-atomic="true"
-              sx={{ 
-                display: 'block',
-                py: '8px',
-                my: '4px'}}
-            >
-              {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
-            </Typography>
+
+      <Typography
+        variant="body1"
+        color="text.secondary"
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{ display: 'block', py: '8px', my: '4px' }}
+      >
+        {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
+      </Typography>
+
       {tab === 0 && (
         filtered.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -190,14 +190,16 @@ export default function PublicEventsClient({ events }) {
         ) : (
           <Stack spacing={3}>
             {filtered.map(event => (
-              <Box key={event.event_id}>
+              <Grid item xs={12} sm={6} md={4} key={event.event_id}>
                 <Card
                   elevation={2}
                   sx={{
                     height: '100%', display: 'flex', flexDirection: 'column',
+                    cursor: 'pointer',
                     '&:hover': { boxShadow: 6 },
                     transition: 'box-shadow 0.2s'
                   }}
+                  onClick={() => setSelectedEvent(event)}
                 >
                   {event.flyer_url && (
                     isImageUrl(event.flyer_url) ? (
@@ -238,55 +240,38 @@ export default function PublicEventsClient({ events }) {
                       {event.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {formatEventDate(event.start_datetime)} · {event.city}, {event.county}
+                      {event.start_datetime
+                        ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'Date TBD'
+                      } · {event.city}, {event.county}
                     </Typography>
-                    <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mb: 1.5 }}>
-                      <Chip label={formatEventTimeRange(event.start_datetime, event.end_datetime)} color="secondary" size="small" />
-                      {event.audience && <Chip label={event.audience} color="info" size="small" />}
-                      {event.cost && <Chip label={event.cost} color="success" size="small" />}
-                      {event.event_type && <Chip label={event.event_type} size="small" variant="outlined" />}
-                    </Stack>
-                    <Typography variant="body2" paragraph>
+                    {event.cost && (
+                      <Chip label={event.cost} size="small" sx={{ mb: 1 }} />
+                    )}
+                    {event.event_type && (
+                      <Chip label={event.event_type} size="small" variant="outlined" sx={{ mb: 1, ml: event.cost ? 1 : 0 }} />
+                    )}
+                    <Typography variant="body2" sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
                       {event.description}
                     </Typography>
-                    {event.address && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        <strong>Address:</strong> {event.address}, {event.city}, CT
-                      </Typography>
-                    )}
-                    {event.flyer_url && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        <strong>Flyer:</strong>{' '}
-                        <a href={event.flyer_url} target="_blank" rel="noopener noreferrer">
-                          View Flyer
-                        </a>
-                      </Typography>
-                    )}
-                    {event.event_contact && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        <strong>Contact:</strong>{' '}
-                        <Link href={`mailto:${event.event_contact}`}>
-                          {event.event_contact}
-                        </Link>
-                      </Typography>
-                    )}
                   </CardContent>
-                  {event.hyperlink && (
-                    <CardActions>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        component={Link}
-                        href={event.hyperlink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Event Link
-                      </Button>
-                    </CardActions>
-                  )}
+                  <CardActions>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      aria-label={`More Info: ${event.title}`}
+                      onClick={e => { e.stopPropagation(); setSelectedEvent(event); }}
+                    >
+                      More Info
+                    </Button>
+                  </CardActions>
                 </Card>
-              </Box>
+              </Grid>
             ))}
           </Stack>
         )
