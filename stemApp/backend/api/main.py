@@ -27,7 +27,12 @@ MULTIPART_INSTALLED = importlib.util.find_spec("multipart") is not None
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="STEM-ACT Backend")
+app = FastAPI(
+    title="STEM-ACT Backend",
+    docs_url="/docs" if os.getenv("ENVIRONMENT") == "development" else None,
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT") == "development" else None,
+    openapi_url="/openapi.json" if os.getenv("ENVIRONMENT") == "development" else None,
+)
 
 cors_origins = os.getenv(
     "CORS_ALLOW_ORIGINS",
@@ -41,6 +46,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def set_secure_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    return response
 
 # Dependency to get DB session
 def get_db():
@@ -1492,3 +1507,21 @@ def update_tag(tag_id: int, payload: UpdateTagRequest, db: Session = Depends(get
     if result.rowcount == 0:
         return JSONResponse({"success": False, "message": "Tag not found"}, status_code=404)
     return {"success": True}
+
+
+@app.get("/api/users")
+def list_users(db: Session = Depends(get_db)):
+    result = db.execute(
+        text("""
+            SELECT
+                u.user_id,
+                u.email,
+                u.role,
+                o.org_name,
+                FALSE AS google_linked
+            FROM users u
+            LEFT JOIN organizations o ON o.org_id = u.org_id
+            ORDER BY u.user_id DESC
+        """)
+    ).mappings().all()
+    return {"success": True, "users": [dict(r) for r in result]}

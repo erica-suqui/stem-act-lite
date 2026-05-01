@@ -5,7 +5,7 @@ import { apiUrl } from '../lib/api';
 
 async function getApprovedEvents() {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await fetch(apiUrl('/api/events?status=approved'), {
@@ -67,3 +67,4 @@ export default async function HomePage() {
     </Box>
   );
 }
+// Thu Apr 30 20:28:50 EDT 2026

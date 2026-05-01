@@ -1,54 +1,32 @@
-import pool from '@/lib/db';
 import UsersTable from './UsersTable';
 import PartnerCodesAdmin from '../components/PartnerCodesAdmin';
 import { Box, Typography, Divider } from '@mui/material';
+import { apiUrl } from '@/lib/api';
 
 export const metadata = {
-	title: 'User Management — STEM-ACT Admin',
+        title: 'User Management — STEM-ACT Admin',
 };
 
 export const dynamic = 'force-dynamic';
 
 async function getUsers() {
-	const columnCheck = await pool.query(`
-		SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.columns
-			WHERE table_schema = 'public'
-			  AND table_name = 'users'
-			  AND column_name = 'google_sub'
-		) AS has_google_sub
-	`);
-	const hasGoogleSub = Boolean(columnCheck.rows[0]?.has_google_sub);
-	const googleLinkedSelect = hasGoogleSub
-		? 'u.google_sub IS NOT NULL AS google_linked'
-		: 'FALSE AS google_linked';
-
-	const result = await pool.query(`
-		SELECT
-			u.user_id,
-			u.email,
-			u.role,
-			o.org_name,
-			${googleLinkedSelect}
-		FROM users u
-		LEFT JOIN organizations o ON o.org_id = u.org_id
-		ORDER BY u.user_id DESC
-	`);
-	return result.rows;
+        const res = await fetch(apiUrl('/api/users'), { cache: 'no-store' });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.success ? data.users : [];
 }
 
 export default async function UsersPage() {
-	const users = await getUsers();
+        const users = await getUsers();
 
-	return (
-		<Box sx={{ p: 3 }}>
-			<Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
-				User Management
-			</Typography>
-			<UsersTable users={users} />
-			<Divider sx={{ my: 4 }} />
-			<PartnerCodesAdmin />
-		</Box>
-	);
+        return (
+                <Box sx={{ p: 3 }}>
+                        <Typography variant="h5" fontWeight={700} color="primary.dark" gutterBottom>
+                                User Management
+                        </Typography>
+                        <UsersTable users={users} />
+                        <Divider sx={{ my: 4 }} />
+                        <PartnerCodesAdmin />
+                </Box>
+        );
 }
