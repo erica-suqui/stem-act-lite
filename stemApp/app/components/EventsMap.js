@@ -241,8 +241,8 @@ export default function EventsMap({ events, setCounty, county, onSelectEvent }) 
           aria-label="Map of STEM events in Connecticut"
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <CTCountiesLayer events={events} selectedCounty={county} setSelectedCounty={setCounty} />
           <MarkersLayer mappable={mappable} />
